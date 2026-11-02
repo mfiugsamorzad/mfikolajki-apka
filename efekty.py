@@ -309,26 +309,6 @@ def rounded_rect(img, p0, p1, r, color, thickness=-1) -> None:
             cv2.ellipse(img, (cx, cy), (r, r), ang, 0, 90, color, thickness, lt)
 
 
-def text_outlined(img, text, org, scale, color=WHITE, thickness=1,
-                  font=cv2.FONT_HERSHEY_SIMPLEX, outline=DARK) -> None:
-    """
-    Tekst z ciemnym obrysem – czytelny na dowolnym tle. Obrys rysujemy jako kopie
-    tekstu przesunięte o 1 px (a nie grubszą linią), bo w czcionkach Hershey
-    grubość zmienia odstępy między literami i obrys "rozjeżdżałby się" z tekstem.
-    """
-    x, y = int(org[0]), int(org[1])
-    for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1), (0, -1), (0, 1), (-1, 0), (1, 0)):
-        cv2.putText(img, text, (x + dx, y + dy), font, scale, outline, thickness, cv2.LINE_AA)
-    cv2.putText(img, text, (x, y), font, scale, color, thickness, cv2.LINE_AA)
-
-
-def fit_text_scale(text, font, max_w, scale, thickness) -> float:
-    """Zmniejsza skalę czcionki, aż tekst zmieści się w max_w pikseli."""
-    while scale > 0.25 and cv2.getTextSize(text, font, scale, thickness)[0][0] > max_w:
-        scale *= 0.92
-    return scale
-
-
 def ease_out_back(x: float) -> float:
     """Animacja "wyskoku" z lekkim przestrzeleniem (0 -> 1)."""
     x = min(max(x, 0.0), 1.0)
@@ -561,11 +541,11 @@ class SantaEffect:
     z napisem "HO HO HO" (fallback ze specyfikacji, w estetycznej formie).
     """
 
-    def __init__(self, w, h, img: np.ndarray | None, duration: float):
+    def __init__(self, w, h, img: np.ndarray | None, duration: float, text):
         self.w, self.h, self.duration = w, h, duration
         self.sprite = Sprite.from_bgra(img).resized(w * 0.36) if img is not None else None
+        self.text = text
         self.start_t = None
-        self.last_rear = None
 
     @property
     def active(self):
@@ -614,13 +594,9 @@ class SantaEffect:
         rounded_rect(frame, (x0 + 4, y0 + 5), (x0 + bw + 4, y0 + bh + 5), 16 * s, (15, 15, 90))
         rounded_rect(frame, (x0, y0), (x0 + bw, y0 + bh), 16 * s, (35, 30, 200))
         rounded_rect(frame, (x0 + 5, y0 + 5), (x0 + bw - 5, y0 + bh - 5), 12 * s, GOLD, max(1, int(2 * s)))
-        font = cv2.FONT_HERSHEY_TRIPLEX
-        th = max(1, int(2 * s))
-        sc = fit_text_scale("HO HO HO", font, bw - 30 * s, 1.3 * s, th)
-        (tw, tht), _ = cv2.getTextSize("HO HO HO", font, sc, th)
-        tx, ty = x0 + (bw - tw) // 2, y0 + (bh + tht) // 2
-        cv2.putText(frame, "HO HO HO", (tx + 2, ty + 2), font, sc, (10, 10, 70), th + 1, cv2.LINE_AA)
-        cv2.putText(frame, "HO HO HO", (tx, ty), font, sc, WHITE, th, cv2.LINE_AA)
+        size = self.text.fit_size("HO HO HO", bw - 36 * s, int(40 * s), bold=True)
+        self.text.draw(frame, "HO HO HO", (x0 + bw / 2, y0 + bh / 2), size, WHITE,
+                       anchor="mm", bold=True, shadow=True)
         return x0, y0 + bh * 0.6
 
 
@@ -630,90 +606,97 @@ class SantaEffect:
 
 class HatEffect:
     """
-    Czapka na twarzach (Haar Cascade) albo – gdy twarzy brak – na palcach znaku V,
-    przechylona zgodnie z kierunkiem palców. Pozycje są wygładzane, a czapka
-    pojawia się i znika płynnie (fade).
+    Czapka Mikołaja nakładana NA GŁOWĘ osoby w kadrze.
+
+    Pozycja, skala i obrót pochodzą z detekcji twarzy (twarz.py -> HeadPose):
+      * szerokość czapki = width_scale × szerokość głowy,
+      * punkt kotwiczenia czapki (anchor_uv – ułamek szerokości/wysokości
+        obrazka, domyślnie środek otoku) ląduje na czole,
+      * czapka obraca się razem z przechyleniem głowy (linia oczu).
+    Każda twarz ma swój "tor" z wygładzaniem wykładniczym (czapka nie drga).
+
+    Gest V "zakłada" czapkę na show_time sekund (jak filtr na Instagramie –
+    można opuścić rękę i pozować). Gdy w kadrze nie ma twarzy, czapka siedzi
+    na palcach pokazujących V.
     """
 
-    FADE_IN = 0.18
-    FACE_TTL = 0.6  # twarz "żyje" tyle sekund od ostatniej detekcji
+    FADE = 0.25
+    TRACK_TTL = 0.5  # tyle sekund tor twarzy przeżywa bez detekcji
 
-    def __init__(self, img: np.ndarray, cascade, hold_time: float, detect_every: int):
+    def __init__(self, img: np.ndarray, show_time: float, anchor_uv=(0.5, 0.85),
+                 width_scale: float = 1.6, forehead_up: float = 0.85):
         self.cache = SpriteCache(Sprite.from_bgra(img))
-        self.cascade = cascade
-        self.hold = hold_time
-        self.detect_every = detect_every
-        self.tracks: list = []   # [box(np.float32[4]), last_seen]
-        self.frame_idx = 0
-        self.shown_since = None
-        self.visible_until = -1.0
-        self.hand_state = None   # wygładzone [cx, cy, szerokość, kąt]
+        self.show_time = show_time
+        self.anchor_uv = anchor_uv
+        self.width_scale = width_scale
+        self.forehead_up = forehead_up
+        self.tracks: list = []        # [stan np.array([x, y, szer, kąt]), ostatnia detekcja]
+        self.since, self.until = -1e9, -1.0
+        self.hand_state = None
+        self.hand_seen = -1e9
 
-    def opacity(self, now):
-        if self.shown_since is None or now > self.visible_until:
-            return 0.0
-        fade_in = (now - self.shown_since) / self.FADE_IN
-        fade_out = (self.visible_until - now) / self.hold
-        return max(0.0, min(1.0, fade_in, fade_out))
+    def visible(self, now) -> bool:
+        return now <= self.until
 
-    def _detect(self, frame, now):
-        small = cv2.resize(frame, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-        gray = cv2.equalizeHist(cv2.cvtColor(small, cv2.COLOR_BGR2GRAY))
-        found = self.cascade.detectMultiScale(gray, scaleFactor=1.15, minNeighbors=6, minSize=(40, 40))
-        for det in found:
-            det = det.astype(np.float32) * 2.0
-            c = det[:2] + det[2:] / 2
-            best, best_d = None, det[2] * 0.6
-            for tr in self.tracks:
-                d = float(np.linalg.norm(tr[0][:2] + tr[0][2:] / 2 - c))
-                if d < best_d:
-                    best, best_d = tr, d
-            if best is None:
-                self.tracks.append([det, now])
-            else:  # wygładzanie wykładnicze – czapka nie skacze między detekcjami
-                best[0] = best[0] * 0.5 + det * 0.5
-                best[1] = now
-        self.tracks = [t for t in self.tracks if now - t[1] < self.FACE_TTL]
-
-    def update(self, frame, now, peace_active, peace_hand, use_face):
+    def update(self, now, peace_active, peace_hand, faces, head_pose_fn):
         if peace_active:
-            if self.shown_since is None or now > self.visible_until:
-                self.shown_since = now
-            self.visible_until = now + self.hold
-        if now > self.visible_until:
+            if not self.visible(now):
+                self.since = now
+            self.until = now + self.show_time
+        if not self.visible(now):
             self.tracks, self.hand_state = [], None
             return
-        self.frame_idx += 1
-        if use_face and self.cascade is not None:
-            if self.frame_idx % self.detect_every == 1:
-                self._detect(frame, now)
-        else:
-            self.tracks = []
+
+        if faces is not None:  # None = w tej klatce nie uruchamialiśmy detekcji
+            for face in faces:
+                pose = head_pose_fn(face, self.forehead_up)
+                target = np.array([pose.forehead[0], pose.forehead[1],
+                                   pose.face_width * self.width_scale, pose.angle], np.float32)
+                best, best_d = None, target[2] * 0.5
+                for tr in self.tracks:
+                    d = float(np.hypot(*(tr[0][:2] - target[:2])))
+                    if d < best_d:
+                        best, best_d = tr, d
+                if best is None:
+                    self.tracks.append([target, now])
+                else:
+                    best[0] = best[0] * 0.45 + target * 0.55
+                    best[1] = now
+            self.tracks = [t for t in self.tracks if now - t[1] < self.TRACK_TTL]
+
         if peace_hand is not None:
             tips = (peace_hand.pts[8] + peace_hand.pts[12]) / 2
             d = tips - peace_hand.palm_center
             angle = math.degrees(math.atan2(d[0], -d[1]))  # 0 = palce pionowo w górę
             target = np.array([tips[0], tips[1], peace_hand.hand_size * 2.0, angle], np.float32)
             self.hand_state = target if self.hand_state is None else self.hand_state * 0.6 + target * 0.4
+            self.hand_seen = now
+
+    def _draw_anchored(self, frame, x, y, width, angle, anchor_uv, opacity):
+        """
+        Rysuje czapkę tak, by punkt anchor_uv obrazka trafił w (x, y), a całość
+        była obrócona o `angle` stopni (zgodnie z ruchem wskazówek zegara).
+        Obracamy wektor "środek obrazka -> punkt kotwiczenia" o ten sam kąt
+        i odejmujemy go od punktu docelowego, otrzymując środek obróconej czapki.
+        """
+        hat = self.cache.get(width)
+        ox = (anchor_uv[0] - 0.5) * hat.w
+        oy = (anchor_uv[1] - 0.5) * hat.h
+        t = math.radians(angle)
+        rx = ox * math.cos(t) - oy * math.sin(t)
+        ry = ox * math.sin(t) + oy * math.cos(t)
+        hat.rotated(-angle).draw_center(frame, x - rx, y - ry, opacity)
 
     def draw(self, frame, now):
-        op = self.opacity(now)
-        if op <= 0:
+        if not self.visible(now):
             return
+        opacity = max(0.0, min(1.0, (now - self.since) / self.FADE, (self.until - now) / self.FADE))
         if self.tracks:
-            for (fx, fy, fw, fh), _ in self.tracks:
-                hat = self.cache.get(fw * 1.55)
-                # Otok czapki nachodzi na czoło (górne ~26% prostokąta twarzy)
-                hat.draw(frame, fx + fw / 2 - hat.w / 2, fy + fh * 0.26 - hat.h, op)
-            return
-        if self.hand_state is None:
-            return
-        cx, cy, width, angle = self.hand_state
-        hat = self.cache.get(width)
-        rad = math.radians(angle)
-        up = np.array([math.sin(rad), -math.cos(rad)])  # kierunek "od dłoni w stronę palców"
-        center = np.array([cx, cy]) + up * hat.h * 0.38
-        hat.rotated(-angle).draw_center(frame, center[0], center[1], op)
+            for (x, y, width, angle), _ in self.tracks:
+                self._draw_anchored(frame, x, y, width, angle, self.anchor_uv, opacity)
+        elif self.hand_state is not None and now - self.hand_seen < 0.3:
+            x, y, width, angle = self.hand_state
+            self._draw_anchored(frame, x, y, width, angle, (0.5, 0.95), opacity)
 
 
 # =============================================================================
@@ -814,8 +797,9 @@ class TreeEffect:
 class Garland:
     """Girlanda kolorowych lampek zwisająca łukami u góry ekranu (efekt "biegnącego światła")."""
 
-    def __init__(self, w, h, swags: int = 3, per_swag: int = 7):
+    def __init__(self, w, h, x_end: float | None = None, swags: int = 3, per_swag: int = 7):
         s = h / 540
+        w = w if x_end is None else x_end
         self.sag = 0.07 * h
         self.wire = []
         self.bulbs = []
@@ -842,49 +826,59 @@ class Garland:
             self.glows[i % len(self.glows)].add_center(frame, x, y, 0.2 + 0.8 * k)
 
 
-def make_vignette(w, h) -> np.ndarray:
-    """
-    Maska winiety z lekkim "ciepłym" tonem (przyciemnione rogi, delikatnie
-    obniżony kanał niebieski). Liczona raz; nakładana przez cv2.multiply (~1 ms).
-    """
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    nx, ny = (xx / w - 0.5) * 2, (yy / h - 0.5) * 2
-    r = np.sqrt(nx * nx * 0.75 + ny * ny)
-    v = 1.0 - 0.42 * np.clip((r - 0.45) / 0.95, 0, 1) ** 1.7
-    return (np.dstack([v * 0.95, v * 0.985, v]) * 255).astype(np.uint8)
-
-
 # =============================================================================
-# INTERFEJS
+# INTERFEJS (logo + pasek gestów)
 # =============================================================================
+
+class Logo:
+    """Logo samorządu (logo_rss.png) stale w prawym górnym rogu, z przezroczystością."""
+
+    def __init__(self, w, h, img: np.ndarray, height_frac: float = 0.13, max_width_frac: float = 0.22):
+        s = h / 540
+        spr = Sprite.from_bgra(img)
+        width = min(spr.w * (h * height_frac) / spr.h, w * max_width_frac)
+        self.sprite = spr.resized(width)
+        self.margin = int(12 * s)
+        self.x = w - self.sprite.w - self.margin
+        self.y = self.margin
+
+    def draw(self, frame):
+        self.sprite.draw(frame, self.x, self.y)
+
 
 class Hud:
     """
     Dolny pasek z czterema "kafelkami" gestów: aktywny gest jest podświetlony,
-    kafelek sań pokazuje ładowanie cooldownu. Nad paskiem – drobna linia z FPS
-    i skrótami klawiszowymi.
+    kafelek sań pokazuje ładowanie cooldownu. Nad paskiem – linia z FPS
+    i skrótami klawiszowymi. Wszystkie napisy: DM Sans (tekst.py).
     """
 
-    # (gest, nazwa gestu, efekt) – OpenCV (czcionki Hershey) nie ma polskich znaków
-    CHIPS = [("FIST", "PIESC", "snieg"),
-             ("WAVE", "OTWARTA DLON", "sanie"),
+    # (gest, nazwa gestu, efekt)
+    CHIPS = [("FIST", "PIĘŚĆ", "śnieg"),
+             ("WAVE", "OTWARTA DŁOŃ", "sanie"),
              ("PEACE", "ZNAK V", "czapka"),
-             ("THUMBS_UP", "KCIUK W GORE", "choinka")]
+             ("THUMBS_UP", "KCIUK W GÓRĘ", "choinka")]
 
-    def __init__(self, w, h):
+    def __init__(self, w, h, text):
         s = self.s = h / 540
+        self.text = text
         self.margin = int(12 * s)
         self.gap = int(8 * s)
-        self.chip_h = int(52 * s)
+        self.chip_h = int(54 * s)
         avail = w * 0.76 - self.margin
         self.chip_w = int(min(175 * s, (avail - 3 * self.gap) / 4))
         self.y1 = h - self.margin
         self.y0 = self.y1 - self.chip_h
         self.height = self.chip_h + self.margin  # zajmowana wysokość (dla choinki)
+        pad = self.chip_w - 18 * s
+        # Rozmiary czcionek dobrane raz, tak by najdłuższy napis zmieścił się w kafelku
+        self.label_size = min(text.fit_size(l, pad, int(11 * s), bold=True) for _, l, _ in self.CHIPS)
+        self.effect_size = min(text.fit_size(e, pad, int(21 * s), bold=True) for _, _, e in self.CHIPS)
 
-    def draw(self, frame, active, cooldown_frac: dict, fps, flags: str):
+    def draw(self, frame, active, cooldown_frac: dict, info_line: str):
         s, x0, y0, y1 = self.s, self.margin, self.y0, self.y1
         x_end = x0 + 4 * self.chip_w + 3 * self.gap
+        # Półprzezroczyste tło kafelków – mieszane tylko w pasie pod nimi
         roi = frame[y0:y1 + 1, x0:x_end + 1]
         layer = roi.copy()
         r = int(14 * s)
@@ -894,21 +888,16 @@ class Hud:
             rounded_rect(layer, (cx0, 0), (cx0 + self.chip_w, self.chip_h), r, fill)
         cv2.addWeighted(layer, 0.72, roi, 0.28, 0, dst=roi)
 
-        f_small, f_big = cv2.FONT_HERSHEY_SIMPLEX, cv2.FONT_HERSHEY_DUPLEX
         for i, (g, label, effect) in enumerate(self.CHIPS):
             cx0 = x0 + i * (self.chip_w + self.gap)
+            cx = cx0 + self.chip_w / 2
             on = g in active
             rounded_rect(frame, (cx0, y0), (cx0 + self.chip_w, y1), r,
                          GOLD if on else (90, 85, 80), max(1, int(1.5 * s)))
-            sc = fit_text_scale(label, f_small, self.chip_w - 16 * s, 0.4 * s, 1)
-            tw = cv2.getTextSize(label, f_small, sc, 1)[0][0]
-            cv2.putText(frame, label, (int(cx0 + (self.chip_w - tw) / 2), int(y0 + 18 * s)), f_small, sc,
-                        (200, 225, 255) if on else (170, 165, 160), 1, cv2.LINE_AA)
-            th = max(1, int(1.4 * s))
-            sc = fit_text_scale(effect, f_big, self.chip_w - 16 * s, 0.72 * s, th)
-            tw = cv2.getTextSize(effect, f_big, sc, th)[0][0]
-            cv2.putText(frame, effect, (int(cx0 + (self.chip_w - tw) / 2), int(y0 + 42 * s)), f_big, sc,
-                        WHITE, th, cv2.LINE_AA)
+            self.text.draw(frame, label, (cx, y0 + 15 * s), self.label_size,
+                           (200, 225, 255) if on else (175, 170, 165), anchor="mm", bold=True)
+            self.text.draw(frame, effect, (cx, y0 + 35 * s), self.effect_size, WHITE,
+                           anchor="mm", bold=True)
             frac = cooldown_frac.get(g, 0.0)
             if frac > 0:  # pasek ładowania (cooldown) przy dolnej krawędzi kafelka
                 bx0, bx1 = int(cx0 + r), int(cx0 + self.chip_w - r)
@@ -917,5 +906,13 @@ class Hud:
                 cv2.line(frame, (bx0, by), (int(bx0 + (bx1 - bx0) * (1 - frac)), by), GOLD,
                          max(2, int(3 * s)), cv2.LINE_AA)
 
-        text_outlined(frame, f"{fps:4.1f} FPS   {flags}", (x0 + 2, y0 - 9 * s), 0.42 * s,
-                      (210, 210, 210))
+        # Linia informacyjna na półprzezroczystej "pigułce" (czytelna na każdym tle)
+        spr = self.text.sprite(info_line, int(13 * s), (235, 235, 235))
+        px0, py1 = x0, int(y0 - 6 * s)
+        px1, py0 = int(px0 + spr.w + 16 * s), int(py1 - spr.h - 4 * s)
+        if py0 >= 0 and px1 < frame.shape[1]:
+            roi = frame[py0:py1 + 1, px0:px1 + 1]
+            layer = roi.copy()
+            rounded_rect(layer, (0, 0), (px1 - px0, py1 - py0), (py1 - py0) // 2, (25, 20, 18))
+            cv2.addWeighted(layer, 0.55, roi, 0.45, 0, dst=roi)
+            spr.draw(frame, px0 + 8 * s, py0 + 2 * s)
