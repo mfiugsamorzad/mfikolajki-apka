@@ -1,0 +1,4 @@
+# Python 3.9–3.12 (mediapipe.solutions nie istnieje w nowszych wydaniach MediaPipe)
+mediapipe>=0.10.9,<=0.10.21
+opencv-python>=4.8,<5
+numpy>=1.24,<2
