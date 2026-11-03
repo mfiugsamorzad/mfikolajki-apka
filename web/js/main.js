@@ -34,6 +34,9 @@ const HAT_WIDTH_SCALE = 1.6;  // szerokość czapki względem szerokości głowy
 const HAT_FOREHEAD_UP = 0.85; // czoło: tyle rozstawów oczu nad linią oczu
 const HAT_ANCHOR = [0.5, 0.85]; // punkt hat.png (ułamki szer./wys.), który trafia na czoło
 const MAX_CANVAS_HEIGHT = 1080; // ograniczenie rozdzielczości rysowania (wydajność)
+// Wielkość interfejsu (kafelki, panel quizu, przycisk, logo) względem wysokości ekranu.
+// 1.0 = jak w pierwszej wersji; mniejsza wartość = mniejsze ramki (np. na dużym ekranie).
+const UI_SCALE = 0.72;
 
 // Grafiki i czcionki leżą w grafiki/ i czcionki/. Na GitHub Pages są obok
 // index.html; przy uruchomieniu lokalnym z folderu web/ – piętro wyżej.
@@ -192,19 +195,24 @@ async function loadModels() {
 class Scene {
   constructor(w, h, assets) {
     Object.assign(this, { w, h });
-    this.s = h / 540;
-    this.hud = new fx.Hud(w, h, ctx);
+    // Skala efektów – względem krótszego boku (telefon w pionie też wygląda dobrze)
+    this.s = Math.min(w, h) / 540;
+    // Skala interfejsu – na ekranie poziomym ułamek wysokości (UI_SCALE),
+    // na telefonie w pionie ograniczona szerokością ekranu
+    this.ui = Math.min((h / 540) * UI_SCALE, w / 480);
+    this.hud = new fx.Hud(w, h, ctx, this.ui);
     this.sparkles = new fx.Sparkles(this.s);
     this.snow = new fx.SnowEffect(w, h, assets.snowflake);
     this.santa = new fx.SantaEffect(w, h, assets.santa, SANTA_DURATION);
     this.hat = new fx.HatEffect(assets.hat, HAT_SHOW_TIME, HAT_ANCHOR, HAT_WIDTH_SCALE, HAT_FOREHEAD_UP);
-    this.tree = new fx.TreeEffect(w, h, assets.tree, TREE_SHOW_TIME, this.hud.height + 6 * this.s);
+    this.tree = new fx.TreeEffect(w, h, assets.tree, TREE_SHOW_TIME, this.hud.height + 6 * this.ui);
     // W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
     // (logo aplikacji jest prawie kwadratowe, więc dostaje więcej wysokości niż szerokie logo RSS)
-    if (assets.appLogo) this.logo = new fx.Logo(w, h, assets.appLogo, 0.2);
-    else this.logo = assets.logo ? new fx.Logo(w, h, assets.logo) : null;
+    const maxW = w < h ? 0.32 : 0.24;
+    if (assets.appLogo) this.logo = new fx.Logo(w, h, assets.appLogo, 108 * this.ui, this.ui, maxW);
+    else this.logo = assets.logo ? new fx.Logo(w, h, assets.logo, 70 * this.ui, this.ui, maxW) : null;
     this.garland = new fx.Garland(w, h, this.logo ? this.logo.left - this.logo.margin : null);
-    this.quizView = new QuizView(w, h);
+    this.quizView = new QuizView(w, h, this.ui, this.logo ? this.logo.bottom : 0);
   }
 }
 

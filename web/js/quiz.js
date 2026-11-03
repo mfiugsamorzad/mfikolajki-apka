@@ -153,13 +153,20 @@ export class Quiz {
   }
 }
 
-/** Panel z pytaniem (u góry, na środku) i przełącznik QUIZ (lewy górny róg). */
+/**
+ * Panel z pytaniem i przełącznik QUIZ (lewy górny róg, pod girlandą).
+ * Ekran poziomy: panel na środku u góry. Ekran pionowy (telefon): panel na całą
+ * szerokość, pod przyciskiem i logo (`topLimit` – dolna krawędź logo).
+ */
 export class QuizView {
-  constructor(w, h) {
-    const s = (this.s = h / 540);
-    this.btn = { x: 12 * s, y: 58 * s, w: 150 * s, h: 34 * s };
-    const pw = Math.min(w * 0.56, 520 * s);
-    this.panel = { x: (w - pw) / 2, y: 0.11 * h, w: pw, h: 128 * s };
+  constructor(w, h, ui, topLimit = 0) {
+    const s = (this.s = ui);
+    const portrait = (this.portrait = w < h);
+    const garlandBottom = 0.07 * Math.min(h, w) + 6 * s;
+    this.btn = { x: 12 * s, y: Math.max(58 * s, garlandBottom), w: 150 * s, h: 34 * s };
+    const pw = portrait ? w - 24 * s : Math.min(w * 0.56, 520 * s);
+    const py = portrait ? Math.max(this.btn.y + this.btn.h, topLimit) + 10 * s : this.btn.y;
+    this.panel = { x: (w - pw) / 2, y: py, w: pw, h: 128 * s };
   }
 
   hitButton(x, y) {
@@ -185,7 +192,8 @@ export class QuizView {
     ctx.font = `600 ${14 * s}px ${FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(`QUIZ: ${on ? "wł." : "wył."}  [m]`, b.x + b.w / 2, b.y + b.h / 2 + 1);
+    // na telefonie nie ma klawiatury – bez podpowiedzi „[m]”
+    ctx.fillText(`QUIZ: ${on ? "wł." : "wył."}${this.portrait ? "" : "  [m]"}`, b.x + b.w / 2, b.y + b.h / 2 + 1);
     ctx.restore();
   }
 
@@ -204,8 +212,9 @@ export class QuizView {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = `rgb(${GOLD})`;
-    ctx.font = `600 ${13 * s}px ${FONT}`;
-    ctx.fillText(`QUIZ  ·  poziom ${quiz.level}  ·  wynik ${quiz.score}`, cx, p.y + 18 * s);
+    const header = `QUIZ  ·  poziom ${quiz.level}  ·  wynik ${quiz.score}`;
+    ctx.font = `600 ${fitFont(ctx, header, 600, 13 * s, p.w - 24 * s)}px ${FONT}`;
+    ctx.fillText(header, cx, p.y + 18 * s);
 
     const q = quiz.state === "correct" ? `${quiz.question} = ${quiz.answer}` : `${quiz.question} = ?`;
     const size = fitFont(ctx, q, 600, 46 * s, p.w - 40 * s);
@@ -217,7 +226,7 @@ export class QuizView {
     if (quiz.state === "correct") line = "Brawo! Świetna odpowiedź!";
     else if (quiz.state === "wrong") line = `Pokazujesz ${quiz.wrongValue} – spróbuj jeszcze raz`;
     else line = `Pokaż wynik na palcach   ·   widzę: ${quiz.seen || "–"}`;
-    ctx.font = `400 ${15 * s}px ${FONT}`;
+    ctx.font = `400 ${fitFont(ctx, line, 400, 15 * s, p.w - 24 * s)}px ${FONT}`;
     ctx.fillStyle = "rgb(235,235,235)";
     ctx.fillText(line, cx, p.y + 98 * s);
 

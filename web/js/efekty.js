@@ -402,7 +402,7 @@ class SnowGround {
 
 export class SnowEffect {
   constructor(w, h, flakeImg) {
-    const s = h / 540;
+    const s = Math.min(w, h) / 540;
     Object.assign(this, { w, h, s });
     this.dots = [1.4, 2.0, 2.8].map((r) => makeSoftDot(r * s));
     this.flakes = [14, 19, 26, 34].map((size) => scaled(flakeImg, size * s));
@@ -503,7 +503,7 @@ export class SantaEffect {
 
   /** Zastępstwo za santa.png: czerwony baner "HO HO HO". */
   drawBanner(ctx, cx, cy) {
-    const s = this.h / 540;
+    const s = Math.min(this.w, this.h) / 540;
     const bw = 250 * s, bh = 70 * s;
     const x0 = cx - bw / 2, y0 = cy - bh / 2;
     ctx.save();
@@ -675,9 +675,10 @@ function topPoint(img) {
 
 export class TreeEffect {
   constructor(w, h, img, showTime, bottomMargin) {
-    const s = h / 540;
+    const s = Math.min(w, h) / 540;
     Object.assign(this, { w, h, showTime });
-    const treeH = h * 0.42;
+    // 42% wysokości ekranu, ale nie szersza niż 42% szerokości (telefon w pionie)
+    const treeH = Math.min(h * 0.42, (w * 0.42 * img.height) / img.width);
     this.base = scaled(img, (treeH * img.width) / img.height);
     this.lights = sampleLights(img);
     this.star = topPoint(img);
@@ -732,7 +733,7 @@ export class TreeEffect {
 
 export class Garland {
   constructor(w, h, xEnd = null, swags = 3, perSwag = 7) {
-    const s = h / 540;
+    const s = Math.min(w, h) / 540;
     const width = xEnd ?? w;
     this.sag = 0.07 * h;
     this.s = s;
@@ -796,9 +797,10 @@ function isLightLogo(img) {
  * półprzezroczystej podkładce: jasnej pod ciemne logo, ciemnej pod jasne.
  */
 export class Logo {
-  constructor(w, h, img, heightFrac = 0.13, maxWidthFrac = 0.24) {
-    const s = h / 540;
-    const width = Math.min((img.width * h * heightFrac) / img.height, w * maxWidthFrac);
+  /** height – docelowa wysokość logo w pikselach; ui – skala interfejsu (marginesy). */
+  constructor(w, h, img, height, ui, maxWidthFrac = 0.24) {
+    const s = ui;
+    const width = Math.min((img.width * height) / img.height, w * maxWidthFrac);
     this.img = scaled(img, width);
     this.plateColor = isLightLogo(img) ? "rgba(20,24,30,0.65)" : "rgba(250,250,250,0.82)";
     this.pad = 8 * s;
@@ -812,6 +814,10 @@ export class Logo {
     return this.x - this.pad;
   }
 
+  get bottom() {
+    return this.y + this.img.height + this.pad;
+  }
+
   draw(ctx) {
     ctx.save();
     ctx.fillStyle = this.plateColor;
@@ -823,7 +829,11 @@ export class Logo {
   }
 }
 
-/** Dolny pasek: 4 kafelki gestów (aktywny podświetlony) + pigułka z FPS i skrótami. */
+/**
+ * Dolny pasek: 4 kafelki gestów (aktywny podświetlony) + pigułka z FPS i skrótami.
+ * Ekran poziomy: kafelki w jednym rzędzie. Ekran pionowy (telefon): siatka 2×2
+ * na całą szerokość. `ui` – skala interfejsu (patrz UI_SCALE w main.js).
+ */
 export class Hud {
   static CHIPS = [
     ["FIST", "PIĘŚĆ", "śnieg"],
@@ -832,31 +842,41 @@ export class Hud {
     ["THUMBS_UP", "KCIUK W GÓRĘ", "choinka"],
   ];
 
-  constructor(w, h, ctx) {
-    const s = (this.s = h / 540);
+  constructor(w, h, ctx, ui) {
+    const s = (this.s = ui);
+    this.w = w;
+    this.portrait = w < h;
     this.margin = 12 * s;
     this.gap = 8 * s;
     this.chipH = 54 * s;
-    const avail = w * 0.76 - this.margin;
-    this.chipW = Math.min(175 * s, (avail - 3 * this.gap) / 4);
+    this.cols = this.portrait ? 2 : 4;
+    const rows = 4 / this.cols;
+    this.chipW = this.portrait
+      ? (w - 2 * this.margin - this.gap) / 2
+      : Math.min(175 * s, (w * 0.76 - this.margin - 3 * this.gap) / 4);
     this.y1 = h - this.margin;
-    this.y0 = this.y1 - this.chipH;
-    this.height = this.chipH + this.margin;
+    this.y0 = this.y1 - rows * this.chipH - (rows - 1) * this.gap;
+    this.height = h - this.y0;
     const pad = this.chipW - 18 * s;
     this.labelSize = Math.min(...Hud.CHIPS.map(([, l]) => fitFont(ctx, l, 600, 11 * s, pad)));
     this.effectSize = Math.min(...Hud.CHIPS.map(([, , e]) => fitFont(ctx, e, 600, 21 * s, pad)));
   }
 
+  chipPos(i) {
+    const col = i % this.cols, row = Math.floor(i / this.cols);
+    return [this.margin + col * (this.chipW + this.gap), this.y0 + row * (this.chipH + this.gap)];
+  }
+
   draw(ctx, active, cooldownFrac, infoLine) {
-    const { s, margin: x0, y0, chipW, chipH, gap } = this;
+    const { s, chipW, chipH } = this;
     const r = 14 * s;
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     Hud.CHIPS.forEach(([g, label, effect], i) => {
-      const cx0 = x0 + i * (chipW + gap);
+      const [cx0, cy0] = this.chipPos(i);
       const on = active.has(g);
-      roundRectPath(ctx, cx0, y0, chipW, chipH, r);
+      roundRectPath(ctx, cx0, cy0, chipW, chipH, r);
       ctx.fillStyle = on ? "rgba(185,35,40,0.72)" : "rgba(20,24,30,0.72)";
       ctx.fill();
       ctx.lineWidth = Math.max(1, 1.5 * s);
@@ -864,13 +884,13 @@ export class Hud {
       ctx.stroke();
       ctx.fillStyle = on ? "rgb(255,225,200)" : "rgb(165,170,175)";
       ctx.font = `600 ${this.labelSize}px ${FONT}`;
-      ctx.fillText(label, cx0 + chipW / 2, y0 + 15 * s);
+      ctx.fillText(label, cx0 + chipW / 2, cy0 + 15 * s);
       ctx.fillStyle = "white";
       ctx.font = `600 ${this.effectSize}px ${FONT}`;
-      ctx.fillText(effect, cx0 + chipW / 2, y0 + 35 * s);
+      ctx.fillText(effect, cx0 + chipW / 2, cy0 + 35 * s);
       const frac = cooldownFrac[g] || 0;
       if (frac > 0) { // pasek ładowania (cooldown)
-        const bx0 = cx0 + r, bx1 = cx0 + chipW - r, by = this.y1 - 5 * s;
+        const bx0 = cx0 + r, bx1 = cx0 + chipW - r, by = cy0 + chipH - 5 * s;
         ctx.lineCap = "round";
         ctx.lineWidth = Math.max(2, 3 * s);
         ctx.strokeStyle = "rgb(60,65,70)";
@@ -879,16 +899,19 @@ export class Hud {
         ctx.beginPath(); ctx.moveTo(bx0, by); ctx.lineTo(bx0 + (bx1 - bx0) * (1 - frac), by); ctx.stroke();
       }
     });
-    // Linia informacyjna na półprzezroczystej "pigułce"
-    ctx.font = `400 ${13 * s}px ${FONT}`;
+    // Linia informacyjna na półprzezroczystej "pigułce" (na telefonie skróty
+    // klawiszowe są zbędne – zostaje tylko FPS); rozmiar dopasowany do szerokości
+    const line = this.portrait ? infoLine.split("   ·   ")[0] : infoLine;
+    const size = fitFont(ctx, line, 400, 13 * s, this.w - 2 * this.margin - 16 * s);
+    ctx.font = `400 ${size}px ${FONT}`;
     ctx.textAlign = "left";
-    const tw = ctx.measureText(infoLine).width;
-    const ph = 22 * s, py = y0 - 6 * s - ph;
-    roundRectPath(ctx, x0, py, tw + 16 * s, ph, ph / 2);
+    const tw = ctx.measureText(line).width;
+    const ph = size + 9 * s, py = this.y0 - 6 * s - ph;
+    roundRectPath(ctx, this.margin, py, tw + 16 * s, ph, ph / 2);
     ctx.fillStyle = "rgba(18,20,25,0.55)";
     ctx.fill();
     ctx.fillStyle = "rgb(235,235,235)";
-    ctx.fillText(infoLine, x0 + 8 * s, py + ph / 2 + 1);
+    ctx.fillText(line, this.margin + 8 * s, py + ph / 2 + 1);
     ctx.restore();
   }
 }

@@ -220,6 +220,7 @@ Bez `--fullscreen` aplikacja otworzy się w zwykłym oknie.
 | Gest nie jest rozpoznawany | Włącz `d` i zobacz, czy dłoń ma narysowany szkielet. Popraw oświetlenie i pokaż całą dłoń wnętrzem do kamery. |
 | Czapka źle dopasowana | Zmień stałe `HAT_WIDTH_SCALE` (rozmiar), `HAT_FOREHEAD_UP` (wysokość) i `HAT_ANCHOR_UV` (punkt obrazka, który trafia w czoło) na początku `swiateczne_lustro.py`. |
 | Twarze daleko od kamery nie są wykrywane | Ustaw `FACE_MODEL = 1` w `swiateczne_lustro.py` (model dalekiego zasięgu, do ~5 m). |
+| Ramki (kafelki, panel quizu, logo) za duże lub za małe, np. na dużym wyświetlaczu | Zmień stałą `UI_SCALE` (domyślnie 0,72) na początku `swiateczne_lustro.py` albo `web/js/main.js`. Mniejsza liczba oznacza mniejsze ramki. |
 | Aplikacja się zacina | Uruchom z mniejszą rozdzielczością: `--width 640 --height 360`. |
 
 ---

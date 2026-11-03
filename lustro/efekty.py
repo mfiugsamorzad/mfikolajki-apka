@@ -847,11 +847,12 @@ class Logo:
     sam: jasna pod ciemne/kolorowe logo, ciemna pod jasne (np. białe) logo.
     """
 
-    def __init__(self, w, h, img: np.ndarray, height_frac: float = 0.13,
+    def __init__(self, w, h, img: np.ndarray, height: float, ui: float,
                  max_width_frac: float = 0.24, plate_opacity: float = 0.82):
-        s = h / 540
+        # height – docelowa wysokość logo w pikselach; ui – skala interfejsu (marginesy)
+        s = ui
         spr = Sprite.from_bgra(img)
-        width = min(spr.w * (h * height_frac) / spr.h, w * max_width_frac)
+        width = min(spr.w * height / spr.h, w * max_width_frac)
         self.sprite = spr.resized(width)
         self.pad = int(8 * s)
         self.margin = int(12 * s)
@@ -894,8 +895,8 @@ class Hud:
              ("PEACE", "ZNAK V", "czapka"),
              ("THUMBS_UP", "KCIUK W GÓRĘ", "choinka")]
 
-    def __init__(self, w, h, text):
-        s = self.s = h / 540
+    def __init__(self, w, h, text, ui: float):
+        s = self.s = ui  # skala interfejsu (UI_SCALE w swiateczne_lustro.py)
         self.text = text
         self.margin = int(12 * s)
         self.gap = int(8 * s)
