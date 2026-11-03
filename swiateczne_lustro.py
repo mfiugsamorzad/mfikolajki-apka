@@ -68,6 +68,7 @@ except (ImportError, AttributeError):  # pragma: no cover - zależy od instalacj
 from lustro import efekty as fx
 from lustro.gesty import (FIST, PEACE, THUMBS_UP, WAVE, Cooldown, GestureStabilizer, HandInfo,
                           WaveTracker, classify_gesture, landmarks_to_array)
+from lustro.quiz import Quiz, QuizView
 from lustro.tekst import TextRenderer
 from lustro.twarz import FaceLocator, head_pose
 
@@ -200,6 +201,7 @@ class Scene:
         self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
         garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
+        self.quiz_view = QuizView(w, h, text)
 
 
 def draw_debug(frame, raw_landmarks, hand_infos, faces, text: TextRenderer) -> None:
@@ -296,6 +298,10 @@ def main() -> None:
 
     cap = open_camera(args.camera, args.width, args.height)
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    # Kliknięcia myszą (przełącznik QUIZ) – zbierane i obsługiwane w pętli głównej
+    clicks: list = []
+    cv2.setMouseCallback(WINDOW_NAME, lambda event, x, y, *_: clicks.append((x, y))
+                         if event == cv2.EVENT_LBUTTONDOWN else None)
     if args.fullscreen:
         cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -304,6 +310,7 @@ def main() -> None:
     prev_t = time.perf_counter()
     prev_active: set = set()
     frame_idx = 0
+    quiz = Quiz()
 
     # model_complexity=0 – lżejszy model dłoni, wyraźnie szybszy na CPU,
     # w zupełności wystarczający do rozpoznawania gestów.
@@ -344,7 +351,9 @@ def main() -> None:
             # --- 2. Klasyfikacja gestów każdej dłoni -----------------------
             raw_landmarks = results.multi_hand_landmarks or []
             hand_infos = [classify_gesture(landmarks_to_array(lm, w, h)) for lm in raw_landmarks]
-            active = stabilizer.update({hi.gesture for hi in hand_infos})
+            gestures = stabilizer.update({hi.gesture for hi in hand_infos})
+            # W trybie QUIZ gesty nie wyzwalają efektów – dłonie służą do odpowiadania
+            active = set() if quiz.on else gestures
 
             def hand_with(gesture):
                 return next((hi for hi in hand_infos if hi.gesture == gesture), None)
@@ -384,6 +393,16 @@ def main() -> None:
                 scene.tree.trigger(now)
                 cooldown.fire(THUMBS_UP, now)
 
+            # --- 4b. QUIZ: ocena odpowiedzi pokazanej na palcach ------------
+            result = quiz.update(now, hand_infos)
+            if result == "correct":
+                qx, qy = scene.quiz_view.center()
+                scene.sparkles.burst(qx, qy, 45, (fx.GOLD, fx.WHITE, fx.ICE))
+                for hi in hand_infos:
+                    scene.sparkles.burst(*hi.palm_center, 25)
+                if quiz.score % 3 == 0 and not scene.santa.active:  # co 3. dobra odpowiedź – sanie!
+                    scene.santa.trigger(now)
+
             # --- 5. Aktualizacja efektów ------------------------------------
             scene.snow.update(dt, FIST in active, now)
             scene.hat.update(now, PEACE in active, hand_with(PEACE), faces, head_pose)
@@ -404,8 +423,10 @@ def main() -> None:
                 scene.garland.draw(frame, now)
             if scene.logo is not None:
                 scene.logo.draw(frame)              # logo zawsze widoczne, na wierzchu
+            scene.quiz_view.draw_panel(frame, quiz, now)
+            scene.quiz_view.draw_button(frame, quiz.on)
             cd = {WAVE: cooldown.remaining(WAVE, now) / COOLDOWNS[WAVE]}
-            info = (f"{fps_shown} FPS   ·   [d] debug   [f] twarz: {'wł.' if use_face else 'wył.'}   "
+            info = (f"{fps_shown} FPS   ·   [m] quiz   [d] debug   [f] twarz: {'wł.' if use_face else 'wył.'}   "
                     f"[g] girlanda   [s] zdjęcie   [q] wyjście")
             scene.hud.draw(frame, active, cd, info)
 
@@ -413,7 +434,12 @@ def main() -> None:
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27):
                 break
-            if key == ord("d"):
+            while clicks:  # kliknięcie przycisku QUIZ
+                if scene.quiz_view.hit_button(*clicks.pop()):
+                    quiz.toggle(now)
+            if key == ord("m"):
+                quiz.toggle(now)
+            elif key == ord("d"):
                 debug = not debug
             elif key == ord("g"):
                 garland_on = not garland_on

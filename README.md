@@ -34,6 +34,22 @@ uczą się w szkole.
 Na dole ekranu stale widać cztery kafelki z gestami, więc nie trzeba ich pamiętać. Kafelek gestu,
 który komputer właśnie rozpoznał, podświetla się na czerwono. W prawym górnym rogu jest logo RSS.
 
+## 🧮 Tryb QUIZ
+
+Quiz włącza się i wyłącza **w trakcie działania aplikacji**: klawiszem **`m`** albo kliknięciem przycisku
+**„QUIZ”** w lewym górnym rogu ekranu.
+
+- U góry ekranu pojawia się działanie, np. `7 + 1 = ?`. Odpowiada się, **pokazując wynik na palcach**
+  jednej albo dwóch rąk (1–10).
+- Odpowiedź zatwierdza się, trzymając tę samą liczbę palców przez ok. 1,2 s; pasek pod pytaniem pokazuje
+  postęp. Dobra odpowiedź daje „Brawo!” i fajerwerki, a co 3. dobra odpowiedź także przelot sań. Po złej
+  odpowiedzi pojawia się podpowiedź i można spróbować jeszcze raz.
+- Co 2 dobre odpowiedzi rośnie poziom: **1** dodawanie → **2** odejmowanie → **3** mnożenie i dzielenie →
+  **4** potęgi, pierwiastki i kolejność działań, np. `√49`, `2³ − 3`, `(5 + 7) : 3`.
+- W trybie quizu efekty gestów są wstrzymane, żeby pokazywanie odpowiedzi ich nie uruchamiało.
+- Palce są liczone tymi samymi regułami co przy rozpoznawaniu gestów. Najpewniej działa to, gdy dłonie
+  są całe w kadrze, wnętrzem do kamery, a palce wyraźnie rozsunięte.
+
 ## Jak to działa? (w skrócie, do opowiedzenia przy stoisku)
 
 1. **Kamera** wysyła ok. 30 obrazów na sekundę. Każdy obraz jest odbijany poziomo, żeby ekran
@@ -67,7 +83,7 @@ Otwórz **https://mfiugsamorzad.github.io/mfikolajki-apka/** w Chrome, Edge lub 
 - Przy pierwszym otwarciu strona pobiera modele MediaPipe (ok. 20 MB), więc warto otworzyć ją przed
   stoiskiem, przy dobrym internecie. Potem przeglądarka trzyma je w pamięci podręcznej.
 - Obraz z kamery jest analizowany wyłącznie w przeglądarce i nigdzie nie jest wysyłany.
-- Klawisze: `d` tryb podglądu, `f` wykrywanie twarzy, `g` girlanda, `s` zapis zdjęcia (pobiera plik PNG),
+- Klawisze: `m` quiz (albo przycisk „QUIZ” na ekranie), `d` tryb podglądu, `f` wykrywanie twarzy, `g` girlanda, `s` zapis zdjęcia (pobiera plik PNG),
   `Enter` lub podwójne kliknięcie to pełny ekran.
 
 **Uruchomienie lokalne** (np. do zmian w kodzie): w głównym folderze projektu uruchom
@@ -172,6 +188,7 @@ Bez `--fullscreen` aplikacja otworzy się w zwykłym oknie.
 | Klawisz | Działanie |
 |---|---|
 | `q` lub `Esc` | wyjście |
+| `m` | włącz lub wyłącz tryb QUIZ (to samo robi kliknięcie przycisku „QUIZ” na ekranie) |
 | `d` | tryb podglądu: szkielet dłoni, rozpoznany gest, wykryte twarze |
 | `s` | zrzut ekranu (plik `lustro_…png` w folderze, z którego uruchomiono aplikację) |
 | `g` | włącz lub wyłącz girlandę lampek u góry ekranu |
@@ -216,6 +233,7 @@ lustro/
 ├── gesty.py           rozpoznawanie gestów z 21 punktów dłoni, wygładzanie, cooldown
 ├── twarz.py           wykrywanie twarzy, pozycja i przechylenie czapki
 ├── efekty.py          grafika: śnieg, sanie, czapka, choinka, iskry, girlanda, logo, pasek gestów
+├── quiz.py            tryb QUIZ: pytania, liczenie palców, ocena odpowiedzi, panel i przełącznik
 └── tekst.py           napisy czcionką DM Sans (Pillow → NumPy/OpenCV)
 grafiki/               pliki PNG
 czcionki/              DM Sans

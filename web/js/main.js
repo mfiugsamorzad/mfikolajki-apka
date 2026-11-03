@@ -16,6 +16,7 @@ import {
   classifyGesture, WaveTracker, GestureStabilizer, Cooldown,
 } from "./gesty.js";
 import * as fx from "./efekty.js";
+import { Quiz, QuizView } from "./quiz.js";
 
 // =============================================================================
 // KONFIGURACJA (te same wartości co w swiateczne_lustro.py)
@@ -81,9 +82,10 @@ const state = {
 const waveTracker = new WaveTracker();
 const stabilizer = new GestureStabilizer();
 const cooldown = new Cooldown(COOLDOWNS);
+const quiz = new Quiz();
 
 // Do testów: window.lustro.forceGestures = new Set(["PEACE"]) wymusza aktywne gesty.
-window.lustro = { state, forceGestures: null };
+window.lustro = { state, quiz, forceGestures: null };
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -198,6 +200,7 @@ class Scene {
     this.tree = new fx.TreeEffect(w, h, assets.tree, TREE_SHOW_TIME, this.hud.height + 6 * this.s);
     this.logo = assets.logo ? new fx.Logo(w, h, assets.logo) : null;
     this.garland = new fx.Garland(w, h, this.logo ? this.logo.left - this.logo.margin : null);
+    this.quizView = new QuizView(w, h);
   }
 }
 
@@ -241,7 +244,16 @@ function detect(nowMs, now) {
   const scene = state.scene;
   const res = state.handLandmarker.detectForVideo(video, nowMs);
   state.hands = (res.landmarks || []).map((lms) => classifyGesture(lms.map((p) => toCanvas(p.x, p.y))));
-  state.active = window.lustro.forceGestures ?? stabilizer.update(new Set(state.hands.map((h) => h.gesture)));
+  const gestures = window.lustro.forceGestures ?? stabilizer.update(new Set(state.hands.map((h) => h.gesture)));
+  // W trybie QUIZ gesty nie wyzwalają efektów – dłonie służą do odpowiadania
+  state.active = quiz.on ? new Set() : gestures;
+
+  // QUIZ: ocena odpowiedzi pokazanej na palcach
+  if (quiz.update(now, state.hands) === "correct") {
+    scene.sparkles.burst(...scene.quizView.center(), 45, [fx.GOLD, fx.WHITE, fx.ICE]);
+    for (const hi of state.hands) scene.sparkles.burst(...hi.palmCenter, 25);
+    if (quiz.score % 3 === 0 && !scene.santa.active) scene.santa.trigger(now); // co 3. dobra odpowiedź – sanie!
+  }
 
   // Twarz – tylko gdy czapka jest lub zaraz będzie widoczna (oszczędność mocy)
   state.faces = null;
@@ -336,7 +348,9 @@ function frame() {
   scene.snow.drawNear(ctx);
   if (state.garland) scene.garland.draw(ctx, now);
   if (scene.logo) scene.logo.draw(ctx);
-  const info = `${state.fpsShown} FPS   ·   [d] debug   [f] twarz: ${state.useFace ? "wł." : "wył."}   ` +
+  scene.quizView.drawPanel(ctx, quiz, now);
+  scene.quizView.drawButton(ctx, quiz.on);
+  const info = `${state.fpsShown} FPS   ·   [m] quiz   [d] debug   [f] twarz: ${state.useFace ? "wł." : "wył."}   ` +
     `[g] girlanda   [s] zdjęcie   [Enter] pełny ekran`;
   scene.hud.draw(ctx, state.active, { [WAVE]: cooldown.remaining(WAVE, now) / COOLDOWNS[WAVE] }, info);
 }
@@ -398,13 +412,24 @@ function saveScreenshot() {
 window.addEventListener("keydown", (e) => {
   if (startScreen.hidden === false) return;
   const k = e.key.toLowerCase();
-  if (k === "d") state.debug = !state.debug;
+  if (k === "m") quiz.toggle(performance.now() / 1000);
+  else if (k === "d") state.debug = !state.debug;
   else if (k === "f" && state.faceDetector) state.useFace = !state.useFace;
   else if (k === "g") state.garland = !state.garland;
   else if (k === "s") saveScreenshot();
   else if (k === "enter") toggleFullscreen();
 });
-canvas.addEventListener("dblclick", () => toggleFullscreen());
+/** Współrzędne kliknięcia w pikselach płótna (płótno jest skalowane do okna). */
+function canvasPoint(e) {
+  const r = canvas.getBoundingClientRect();
+  return [((e.clientX - r.left) * canvas.width) / r.width, ((e.clientY - r.top) * canvas.height) / r.height];
+}
+canvas.addEventListener("click", (e) => {
+  if (state.scene && state.scene.quizView.hitButton(...canvasPoint(e))) quiz.toggle(performance.now() / 1000);
+});
+canvas.addEventListener("dblclick", (e) => {
+  if (!(state.scene && state.scene.quizView.hitButton(...canvasPoint(e)))) toggleFullscreen();
+});
 window.addEventListener("resize", resize);
 startBtn.addEventListener("click", startCamera);
 
