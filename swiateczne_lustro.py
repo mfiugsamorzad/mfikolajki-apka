@@ -203,8 +203,11 @@ class Scene:
                                 HAT_WIDTH_SCALE, HAT_FOREHEAD_UP)
         self.tree = fx.TreeEffect(w, h, assets["tree"], TREE_SHOW_TIME, self.hud.height + 6)
         # W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
-        corner_logo = assets["app_logo"] if assets["app_logo"] is not None else assets["logo"]
-        self.logo = fx.Logo(w, h, corner_logo) if corner_logo is not None else None
+        # (logo aplikacji jest prawie kwadratowe, więc dostaje więcej wysokości niż szerokie logo RSS)
+        if assets["app_logo"] is not None:
+            self.logo = fx.Logo(w, h, assets["app_logo"], height_frac=0.2)
+        else:
+            self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
         garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
         self.quiz_view = QuizView(w, h, text)

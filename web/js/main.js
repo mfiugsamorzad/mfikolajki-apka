@@ -200,8 +200,9 @@ class Scene {
     this.hat = new fx.HatEffect(assets.hat, HAT_SHOW_TIME, HAT_ANCHOR, HAT_WIDTH_SCALE, HAT_FOREHEAD_UP);
     this.tree = new fx.TreeEffect(w, h, assets.tree, TREE_SHOW_TIME, this.hud.height + 6 * this.s);
     // W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
-    const cornerLogo = assets.appLogo || assets.logo;
-    this.logo = cornerLogo ? new fx.Logo(w, h, cornerLogo) : null;
+    // (logo aplikacji jest prawie kwadratowe, więc dostaje więcej wysokości niż szerokie logo RSS)
+    if (assets.appLogo) this.logo = new fx.Logo(w, h, assets.appLogo, 0.2);
+    else this.logo = assets.logo ? new fx.Logo(w, h, assets.logo) : null;
     this.garland = new fx.Garland(w, h, this.logo ? this.logo.left - this.logo.margin : null);
     this.quizView = new QuizView(w, h);
   }
