@@ -1,6 +1,6 @@
 # web/
 
-Wersja przeglądarkowa świątecznego lustra, publikowana na GitHub Pages. Działa w przeglądarce bez instalacji. Obraz z kamery jest analizowany na miejscu i nigdzie nie jest wysyłany.
+Wersja przeglądarkowa aplikacji MFIstmas filteRSS, publikowana na GitHub Pages. Działa w przeglądarce bez instalacji. Obraz z kamery jest analizowany na miejscu i nigdzie nie jest wysyłany.
 
 | Plik / folder | Zawartość |
 |---|---|
@@ -8,6 +8,7 @@ Wersja przeglądarkowa świątecznego lustra, publikowana na GitHub Pages. Dzia�
 | `style.css` | wygląd ekranu startowego i czcionka DM Sans |
 | `js/main.js` | kamera, modele MediaPipe (dłonie i twarz), logika wyzwalania efektów, główna pętla rysowania |
 | `js/gesty.js` | rozpoznawanie 4 gestów z 21 punktów dłoni, przeniesione 1:1 z `lustro/gesty.py` |
+| `js/quiz.js` | tryb QUIZ przeniesiony 1:1 z `lustro/quiz.py`: pytania, liczenie palców, ocena odpowiedzi, panel i przełącznik |
 | `js/efekty.js` | efekty nakładane na obraz: śnieg z zaspą, sanie, czapka, choinka, iskry, girlanda, logo, pasek gestów |
 | `models/hand_landmarker.task` | model MediaPipe wykrywający dłonie i ich 21 punktów |
 | `models/blaze_face_short_range.tflite` | model MediaPipe wykrywający twarze (do ok. 2 m od kamery) |

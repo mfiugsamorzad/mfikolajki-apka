@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Świąteczne Lustro AR
-====================
+MFIstmas filteRSS
+==================
 
 Lustro AR w stylu filtrów z Instagrama: na ekranie widać obraz NA ŻYWO z kamery
 (odbity lustrzanie), a efekty świąteczne są nakładane bezpośrednio na tę klatkę
@@ -20,7 +20,8 @@ rozpoznajemy 4 gesty:
                                    lokalizuje MediaPipe Face Detection
     Kciuk w górę      (THUMBS_UP)  choinka z mrugającymi lampkami (tree.png)
 
-Stale widoczne: logo samorządu (logo_rss.png) w prawym górnym rogu.
+Stale widoczne: logo aplikacji (logo_filterss.png; bez niego – logo samorządu
+logo_rss.png) w prawym górnym rogu.
 Wszystkie napisy: czcionka DM Sans (DMSans.ttf) renderowana przez Pillow.
 
 Struktura projektu:
@@ -29,7 +30,7 @@ Struktura projektu:
     lustro/twarz.py      – lokalizacja twarzy i pozycji czapki na głowie
     lustro/efekty.py     – grafika: sprite'y, śnieg, sanie, czapka, choinka, logo, HUD
     lustro/tekst.py      – napisy DM Sans (Pillow -> NumPy/OpenCV)
-    grafiki/             – santa.png, hat.png, tree.png, snowflake.png, logo_rss.png
+    grafiki/             – santa.png, hat.png, tree.png, snowflake.png, logo_filterss.png, logo_rss.png
     czcionki/            – DMSans.ttf (opcjonalnie DMSans-Bold.ttf)
 
 Sterowanie z klawiatury:
@@ -68,6 +69,7 @@ except (ImportError, AttributeError):  # pragma: no cover - zależy od instalacj
 from lustro import efekty as fx
 from lustro.gesty import (FIST, PEACE, THUMBS_UP, WAVE, Cooldown, GestureStabilizer, HandInfo,
                           WaveTracker, classify_gesture, landmarks_to_array)
+from lustro.quiz import Quiz, QuizView
 from lustro.tekst import TextRenderer
 from lustro.twarz import FaceLocator, head_pose
 
@@ -84,6 +86,7 @@ ASSET_FILES = {
     "tree": "tree.png",
     "snowflake": "snowflake.png",
     "logo": "logo_rss.png",
+    "app_logo": "logo_filterss.png",   # logo aplikacji – w prawym górnym rogu obrazu
 }
 # Czcionka DM Sans. Akceptujemy też nazwy plików z paczki pobranej z Google Fonts.
 FONT_FILES = ["DMSans.ttf", "DMSans-Regular.ttf", "DMSans[opsz,wght].ttf",
@@ -91,7 +94,7 @@ FONT_FILES = ["DMSans.ttf", "DMSans-Regular.ttf", "DMSans[opsz,wght].ttf",
 # Pogrubienie (opcjonalne): pierwszy znaleziony plik; bez niego – oś wagi czcionki zmiennej
 FONT_BOLD_FILES = ["DMSans-Bold.ttf", "DMSans-SemiBold.ttf", "DMSans-ExtraBold.ttf"]
 
-WINDOW_NAME = "Swiateczne Lustro AR"
+WINDOW_NAME = "MFIstmas filteRSS"
 
 # Cooldown (s) – minimalny odstęp między kolejnymi WYZWOLENIAMI danego efektu.
 # Dla sań to kluczowe: bez tego przy 30 FPS każdy kadr z otwartą dłonią
@@ -176,8 +179,10 @@ def load_assets() -> dict:
     if assets["snowflake"] is None:
         print("[info] Brak snowflake.png – używam rysowanej śnieżynki.")
         assets["snowflake"] = fx.make_fallback_snowflake()
-    if assets["logo"] is None:
-        print("[uwaga] Brak logo_rss.png – logo nie będzie wyświetlane.")
+    if assets["app_logo"] is None:
+        print("[info] Brak logo_filterss.png – w rogu ekranu będzie logo samorządu (logo_rss.png).")
+    if assets["logo"] is None and assets["app_logo"] is None:
+        print("[uwaga] Brak logo_filterss.png i logo_rss.png – logo nie będzie wyświetlane.")
     return assets
 
 
@@ -197,9 +202,15 @@ class Scene:
         self.hat = fx.HatEffect(assets["hat"], HAT_SHOW_TIME, HAT_ANCHOR_UV,
                                 HAT_WIDTH_SCALE, HAT_FOREHEAD_UP)
         self.tree = fx.TreeEffect(w, h, assets["tree"], TREE_SHOW_TIME, self.hud.height + 6)
-        self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
+        # W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
+        # (logo aplikacji jest prawie kwadratowe, więc dostaje więcej wysokości niż szerokie logo RSS)
+        if assets["app_logo"] is not None:
+            self.logo = fx.Logo(w, h, assets["app_logo"], height_frac=0.2)
+        else:
+            self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
         garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
+        self.quiz_view = QuizView(w, h, text)
 
 
 def draw_debug(frame, raw_landmarks, hand_infos, faces, text: TextRenderer) -> None:
@@ -270,7 +281,7 @@ class BlackFrameWatch:
 # =============================================================================
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Świąteczne lustro AR (OpenCV + MediaPipe)")
+    parser = argparse.ArgumentParser(description="MFIstmas filteRSS – świąteczne lustro AR (OpenCV + MediaPipe)")
     parser.add_argument("--camera", type=int, default=0, help="indeks kamery (domyślnie 0)")
     parser.add_argument("--width", type=int, default=960, help="szerokość obrazu kamery")
     parser.add_argument("--height", type=int, default=540, help="wysokość obrazu kamery")
@@ -296,6 +307,10 @@ def main() -> None:
 
     cap = open_camera(args.camera, args.width, args.height)
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    # Kliknięcia myszą (przełącznik QUIZ) – zbierane i obsługiwane w pętli głównej
+    clicks: list = []
+    cv2.setMouseCallback(WINDOW_NAME, lambda event, x, y, *_: clicks.append((x, y))
+                         if event == cv2.EVENT_LBUTTONDOWN else None)
     if args.fullscreen:
         cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -304,6 +319,7 @@ def main() -> None:
     prev_t = time.perf_counter()
     prev_active: set = set()
     frame_idx = 0
+    quiz = Quiz()
 
     # model_complexity=0 – lżejszy model dłoni, wyraźnie szybszy na CPU,
     # w zupełności wystarczający do rozpoznawania gestów.
@@ -344,7 +360,9 @@ def main() -> None:
             # --- 2. Klasyfikacja gestów każdej dłoni -----------------------
             raw_landmarks = results.multi_hand_landmarks or []
             hand_infos = [classify_gesture(landmarks_to_array(lm, w, h)) for lm in raw_landmarks]
-            active = stabilizer.update({hi.gesture for hi in hand_infos})
+            gestures = stabilizer.update({hi.gesture for hi in hand_infos})
+            # W trybie QUIZ gesty nie wyzwalają efektów – dłonie służą do odpowiadania
+            active = set() if quiz.on else gestures
 
             def hand_with(gesture):
                 return next((hi for hi in hand_infos if hi.gesture == gesture), None)
@@ -384,6 +402,16 @@ def main() -> None:
                 scene.tree.trigger(now)
                 cooldown.fire(THUMBS_UP, now)
 
+            # --- 4b. QUIZ: ocena odpowiedzi pokazanej na palcach ------------
+            result = quiz.update(now, hand_infos)
+            if result == "correct":
+                qx, qy = scene.quiz_view.center()
+                scene.sparkles.burst(qx, qy, 45, (fx.GOLD, fx.WHITE, fx.ICE))
+                for hi in hand_infos:
+                    scene.sparkles.burst(*hi.palm_center, 25)
+                if quiz.score % 3 == 0 and not scene.santa.active:  # co 3. dobra odpowiedź – sanie!
+                    scene.santa.trigger(now)
+
             # --- 5. Aktualizacja efektów ------------------------------------
             scene.snow.update(dt, FIST in active, now)
             scene.hat.update(now, PEACE in active, hand_with(PEACE), faces, head_pose)
@@ -404,8 +432,10 @@ def main() -> None:
                 scene.garland.draw(frame, now)
             if scene.logo is not None:
                 scene.logo.draw(frame)              # logo zawsze widoczne, na wierzchu
+            scene.quiz_view.draw_panel(frame, quiz, now)
+            scene.quiz_view.draw_button(frame, quiz.on)
             cd = {WAVE: cooldown.remaining(WAVE, now) / COOLDOWNS[WAVE]}
-            info = (f"{fps_shown} FPS   ·   [d] debug   [f] twarz: {'wł.' if use_face else 'wył.'}   "
+            info = (f"{fps_shown} FPS   ·   [m] quiz   [d] debug   [f] twarz: {'wł.' if use_face else 'wył.'}   "
                     f"[g] girlanda   [s] zdjęcie   [q] wyjście")
             scene.hud.draw(frame, active, cd, info)
 
@@ -413,7 +443,12 @@ def main() -> None:
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27):
                 break
-            if key == ord("d"):
+            while clicks:  # kliknięcie przycisku QUIZ
+                if scene.quiz_view.hit_button(*clicks.pop()):
+                    quiz.toggle(now)
+            if key == ord("m"):
+                quiz.toggle(now)
+            elif key == ord("d"):
                 debug = not debug
             elif key == ord("g"):
                 garland_on = not garland_on

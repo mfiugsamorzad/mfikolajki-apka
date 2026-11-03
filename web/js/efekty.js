@@ -1,4 +1,4 @@
-// Efekty świątecznego lustra rysowane na <canvas> NA klatce z kamery.
+// Efekty aplikacji MFIstmas filteRSS rysowane na <canvas> NA klatce z kamery.
 // Odpowiednik lustro/efekty.py (wersja Python). Kolory w formacie RGB.
 
 export const GOLD = [255, 200, 40];
@@ -780,11 +780,27 @@ export class Garland {
 }
 
 /** Logo samorządu w prawym górnym rogu, na jasnej półprzezroczystej podkładce. */
+/** Czy logo jest jasne (średnia jasność nieprzezroczystych pikseli > 160)? */
+function isLightLogo(img) {
+  const small = scaled(img, Math.min(img.width, 200));
+  const d = small.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, small.width, small.height).data;
+  let sum = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] > 128) { sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; n++; }
+  }
+  return n > 0 && sum / n > 160;
+}
+
+/**
+ * Logo aplikacji (a gdy go brak – logo samorządu) w prawym górnym rogu na
+ * półprzezroczystej podkładce: jasnej pod ciemne logo, ciemnej pod jasne.
+ */
 export class Logo {
   constructor(w, h, img, heightFrac = 0.13, maxWidthFrac = 0.24) {
     const s = h / 540;
     const width = Math.min((img.width * h * heightFrac) / img.height, w * maxWidthFrac);
     this.img = scaled(img, width);
+    this.plateColor = isLightLogo(img) ? "rgba(20,24,30,0.65)" : "rgba(250,250,250,0.82)";
     this.pad = 8 * s;
     this.margin = 12 * s;
     this.r = 12 * s;
@@ -798,7 +814,7 @@ export class Logo {
 
   draw(ctx) {
     ctx.save();
-    ctx.fillStyle = "rgba(250,250,250,0.82)";
+    ctx.fillStyle = this.plateColor;
     roundRectPath(ctx, this.x - this.pad, this.y - this.pad,
       this.img.width + 2 * this.pad, this.img.height + 2 * this.pad, this.r);
     ctx.fill();
