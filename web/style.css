@@ -80,8 +80,38 @@ html, body {
   backdrop-filter: blur(6px);
 }
 
+/* Logo aplikacji (grafiki/logo_filterss.png) – gdy jest, zastępuje napis tytułu */
+.logo-aplikacji {
+  display: block;
+  max-width: 100%;
+  max-height: 160px;
+  margin: 0 auto 16px;
+  object-fit: contain;
+}
+.logo-aplikacji:not([src]) { display: none; }
+.ma-logo h1 { /* tytuł zostaje dla czytników ekranu, ale nie dubluje logo */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* Logo samorządu na dole karty ("przygotowane przez") */
+.autorzy {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ramka);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--tekst-2);
+}
+
 .logo {
-  height: 72px;
+  height: 56px;
   max-width: 70%;
   object-fit: contain;
   padding: 8px 14px;

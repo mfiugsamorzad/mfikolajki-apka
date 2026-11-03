@@ -4,6 +4,7 @@ Grafiki nakładane przez aplikację na obraz z kamery. Wszystkie to pliki PNG z 
 
 | Plik | Zawartość | Gdzie pojawia się w aplikacji |
 |---|---|---|
+| `logo_filterss.png` | logo aplikacji christmas filteRSS | na ekranie startowym wersji przeglądarkowej i jako ikona karty przeglądarki |
 | `logo_rss.png` | logo Wydziałowej Rady Samorządu Studenckiego WMFiI UG | stale w prawym górnym rogu ekranu, na jasnej podkładce |
 | `santa.png` | Mikołaj w saniach zaprzęgniętych w renifera | przelatuje przez ekran po geście otwartej dłoni lub machaniu |
 | `hat.png` | czerwona czapka Mikołaja z białym otokiem i pomponem | na głowie osoby w kadrze po geście „V” |

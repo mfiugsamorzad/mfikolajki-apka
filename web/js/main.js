@@ -1,4 +1,4 @@
-// Świąteczne Lustro AR – wersja przeglądarkowa.
+// christmas filteRSS – wersja przeglądarkowa.
 //
 // Obraz z kamery (getUserMedia) jest rysowany na <canvas> odbity lustrzanie,
 // a efekty są nakładane bezpośrednio na niego. MediaPipe (Hand Landmarker
@@ -44,6 +44,8 @@ const ASSETS = {
   snowflake: "snowflake.png",
   logo: "logo_rss.png",
 };
+// Logo aplikacji – tylko na ekranie startowym i jako ikona karty przeglądarki (opcjonalne)
+const APP_LOGO = "logo_filterss.png";
 
 // =============================================================================
 // ELEMENTY STRONY I STAN
@@ -113,12 +115,26 @@ async function loadImage(name) {
   return null;
 }
 
+async function showAppLogo() {
+  const img = await loadImage(APP_LOGO);
+  if (!img) return; // brak pliku -> zostaje napis "christmas filteRSS"
+  const src = fx.trimTransparent(img).toDataURL();
+  document.getElementById("start-logo-aplikacji").src = src;
+  document.querySelector(".karta").classList.add("ma-logo");
+  const icon = document.createElement("link"); // ikona karty przeglądarki
+  icon.rel = "icon";
+  icon.href = src;
+  document.head.appendChild(icon);
+}
+
 async function loadAssets() {
   const entries = await Promise.all(
     Object.entries(ASSETS).map(async ([key, file]) => [key, await loadImage(file)]),
   );
   const raw = Object.fromEntries(entries);
-  if (raw.logo) document.getElementById("start-logo").src = raw.logo.src;
+  // Przycięte przezroczyste marginesy – logo ma właściwą wielkość i jest wyśrodkowane
+  if (raw.logo) document.getElementById("start-logo").src = fx.trimTransparent(raw.logo).toDataURL();
+  showAppLogo(); // nie czekamy – logo aplikacji nie jest potrzebne do działania lustra
   return {
     santa: raw.santa ? fx.trimTransparent(raw.santa) : null, // brak -> baner "HO HO HO"
     hat: raw.hat ? fx.trimTransparent(raw.hat) : fx.fallbackHat(),

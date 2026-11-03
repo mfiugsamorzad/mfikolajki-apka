@@ -1,4 +1,4 @@
-// Efekty świątecznego lustra rysowane na <canvas> NA klatce z kamery.
+// Efekty aplikacji christmas filteRSS rysowane na <canvas> NA klatce z kamery.
 // Odpowiednik lustro/efekty.py (wersja Python). Kolory w formacie RGB.
 
 export const GOLD = [255, 200, 40];

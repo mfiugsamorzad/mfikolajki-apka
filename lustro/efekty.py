@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Grafika i efekty świątecznego lustra.
+Grafika i efekty aplikacji christmas filteRSS.
 
 Najważniejsze decyzje wizualne / wydajnościowe:
 

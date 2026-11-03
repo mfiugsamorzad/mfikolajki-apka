@@ -1,6 +1,6 @@
 # web/
 
-Wersja przeglądarkowa świątecznego lustra, publikowana na GitHub Pages. Działa w przeglądarce bez instalacji. Obraz z kamery jest analizowany na miejscu i nigdzie nie jest wysyłany.
+Wersja przeglądarkowa aplikacji christmas filteRSS, publikowana na GitHub Pages. Działa w przeglądarce bez instalacji. Obraz z kamery jest analizowany na miejscu i nigdzie nie jest wysyłany.
 
 | Plik / folder | Zawartość |
 |---|---|

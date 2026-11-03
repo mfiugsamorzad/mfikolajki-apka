@@ -1,4 +1,4 @@
-# 🎄 Świąteczne Lustro AR
+# 🎄 christmas filteRSS
 
 Interaktywne „magiczne lustro”, które reaguje na gesty dłoni. Stajesz przed kamerą, widzisz się na ekranie
 jak w lustrze i wystarczy jeden gest: zaczyna padać śnieg, nad głową przelatują sanie Mikołaja, na głowie
