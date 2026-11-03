@@ -831,18 +831,40 @@ class Garland:
 # =============================================================================
 
 class Logo:
-    """Logo samorządu (logo_rss.png) stale w prawym górnym rogu, z przezroczystością."""
+    """
+    Logo samorządu (logo_rss.png) stale w prawym górnym rogu, z przezroczystością.
+    Pod logo leży jasna, półprzezroczysta "podkładka" – bez niej kolorowe logo
+    może zlewać się z tłem z kamery (np. czerwone logo na czerwonym swetrze).
+    """
 
-    def __init__(self, w, h, img: np.ndarray, height_frac: float = 0.13, max_width_frac: float = 0.22):
+    def __init__(self, w, h, img: np.ndarray, height_frac: float = 0.13,
+                 max_width_frac: float = 0.24, plate_opacity: float = 0.82):
         s = h / 540
         spr = Sprite.from_bgra(img)
         width = min(spr.w * (h * height_frac) / spr.h, w * max_width_frac)
         self.sprite = spr.resized(width)
+        self.pad = int(8 * s)
         self.margin = int(12 * s)
-        self.x = w - self.sprite.w - self.margin
-        self.y = self.margin
+        self.plate_opacity = plate_opacity
+        # (x, y) logo; podkładka jest o `pad` większa z każdej strony
+        self.x = w - self.sprite.w - self.margin - self.pad
+        self.y = self.margin + self.pad
+        self.plate = None
+        if plate_opacity > 0:
+            pw, ph = self.sprite.w + 2 * self.pad, self.sprite.h + 2 * self.pad
+            plate = np.zeros((ph, pw, 4), np.uint8)
+            rounded_rect(plate, (0, 0), (pw - 1, ph - 1), int(12 * s), (250, 250, 250, 255))
+            plate[:, :, 3] = (plate[:, :, 3] * plate_opacity).astype(np.uint8)
+            self.plate = Sprite.from_bgra(plate)
+
+    @property
+    def left(self):
+        """Lewa krawędź logo razem z podkładką (do niej sięga girlanda)."""
+        return self.x - self.pad
 
     def draw(self, frame):
+        if self.plate is not None:
+            self.plate.draw(frame, self.x - self.pad, self.y - self.pad)
         self.sprite.draw(frame, self.x, self.y)
 
 

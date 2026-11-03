@@ -7,8 +7,8 @@ na Instagramie, z tą różnicą, że efekty uruchamia ruch ręki, a nie przycis
 
 ## Po co powstała ta aplikacja?
 
-Aplikacja powstała na **stoisko samorządu studentów (RSS) Wydziału Matematyki, Fizyki i Informatyki
-Uniwersytetu Gdańskiego** podczas **wydziałowych Mikołajek naukowych** dla uczniów szkół podstawowych
+Aplikacja powstała na **stoisko Wydziałowej Rady Samorządu Studenckiego (RSS) Wydziału Matematyki,
+Fizyki i Informatyki Uniwersytetu Gdańskiego** podczas **wydziałowych Mikołajek naukowych** dla uczniów szkół podstawowych
 i ponadpodstawowych.
 
 Chcemy pokazać uczniom, że informatyka i matematyka to nie tylko wzory w zeszycie. Każdy może podejść,
@@ -89,17 +89,17 @@ mfikolajki-apka/
 │   └── snowflake.png     śnieżynka
 └── czcionki/
     ├── DMSans-Regular.ttf
-    └── DMSans-Bold.ttf
+    └── DMSans-SemiBold.ttf   (lub DMSans-Bold.ttf)
 ```
 
 | Plik | Na co uważać |
 |---|---|
-| wszystkie `.png` | **przezroczyste tło**, inaczej grafika będzie miała wokół siebie prostokąt |
+| wszystkie `.png` | **przezroczyste tło**, inaczej grafika będzie miała wokół siebie prostokąt (puste marginesy program przytnie sam) |
 | `santa.png` | sanie zwrócone **w prawo** (lecą od lewej do prawej), kadr podłużny ~3:1 |
 | `hat.png` | biały otok przy **dolnej krawędzi** obrazka, bez pustych marginesów |
 | `tree.png` | choinka ustawiona pionowo; lampki program dorysuje sam |
 | `snowflake.png` | biała śnieżynka w kwadratowym kadrze |
-| czcionka | z https://fonts.google.com/specimen/DM+Sans (**Get font → Download all**) weź z folderu `static/` pliki `DMSans-Regular.ttf` i `DMSans-Bold.ttf` |
+| czcionka | z https://fonts.google.com/specimen/DM+Sans (**Get font → Download all**) weź z folderu `static/` plik `DMSans-Regular.ttf` oraz `DMSans-SemiBold.ttf` lub `DMSans-Bold.ttf` |
 
 Jeśli którejś grafiki brakuje, aplikacja i tak się uruchomi i narysuje własną wersję zastępczą.
 

@@ -88,7 +88,8 @@ ASSET_FILES = {
 # Czcionka DM Sans. Akceptujemy też nazwy plików z paczki pobranej z Google Fonts.
 FONT_FILES = ["DMSans.ttf", "DMSans-Regular.ttf", "DMSans[opsz,wght].ttf",
               "DMSans-VariableFont_opsz,wght.ttf"]
-FONT_BOLD_FILE = "DMSans-Bold.ttf"   # opcjonalnie; bez niego pogrubienie z osi wagi czcionki
+# Pogrubienie (opcjonalne): pierwszy znaleziony plik; bez niego – oś wagi czcionki zmiennej
+FONT_BOLD_FILES = ["DMSans-Bold.ttf", "DMSans-SemiBold.ttf", "DMSans-ExtraBold.ttf"]
 
 WINDOW_NAME = "Swiateczne Lustro AR"
 
@@ -144,7 +145,22 @@ def load_rgba(path: str) -> np.ndarray | None:
         print(f"[uwaga] {os.path.basename(path)} nie ma przezroczystości – "
               "będzie widoczny jako prostokąt. Użyj PNG z przezroczystym tłem.")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
-    return img
+        return img
+    return trim_transparent(img)
+
+
+def trim_transparent(img: np.ndarray, pad: int = 2) -> np.ndarray:
+    """
+    Przycina przezroczyste marginesy grafiki. Dzięki temu rozmiar i położenie
+    (np. logo w rogu, czapka na czole) zależą od samej treści obrazka, a nie od
+    tego, ile pustego miejsca zostawiono wokół niej w pliku PNG.
+    """
+    ys, xs = np.nonzero(img[:, :, 3] > 8)
+    if len(xs) == 0:
+        return img
+    y0, y1 = max(ys.min() - pad, 0), min(ys.max() + pad + 1, img.shape[0])
+    x0, x1 = max(xs.min() - pad, 0), min(xs.max() + pad + 1, img.shape[1])
+    return np.ascontiguousarray(img[y0:y1, x0:x1])
 
 
 def load_assets() -> dict:
@@ -182,7 +198,7 @@ class Scene:
                                 HAT_WIDTH_SCALE, HAT_FOREHEAD_UP)
         self.tree = fx.TreeEffect(w, h, assets["tree"], TREE_SHOW_TIME, self.hud.height + 6)
         self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
-        garland_end = self.logo.x - self.logo.margin if self.logo else None
+        garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
 
 
@@ -265,7 +281,9 @@ def main() -> None:
     assets = load_assets()
     font = next((find_file(FONTS_DIR, f) for f in FONT_FILES
                  if os.path.isfile(find_file(FONTS_DIR, f))), os.path.join(FONTS_DIR, FONT_FILES[0]))
-    text = TextRenderer(font, find_file(FONTS_DIR, FONT_BOLD_FILE))
+    bold = next((find_file(FONTS_DIR, f) for f in FONT_BOLD_FILES
+                 if os.path.isfile(find_file(FONTS_DIR, f))), None)
+    text = TextRenderer(font, bold)
     haar_dirs = [GRAPHICS_DIR, BASE_DIR] + ([cv2.data.haarcascades] if hasattr(cv2, "data") else [])
     faces_locator = FaceLocator(mp_face_detection, haar_dirs, FACE_MODEL)
     use_face = not args.no_face and faces_locator.available
