@@ -113,6 +113,9 @@ HAT_WIDTH_SCALE = 1.6         # szerokość czapki względem szerokości głowy
 HAT_FOREHEAD_UP = 0.85        # czoło: tyle rozstawów oczu nad linią oczu
 HAT_ANCHOR_UV = (0.5, 0.85)   # punkt obrazka hat.png (ułamki szer./wys.), który ląduje na czole
                               # – domyślnie środek dolnej części otoku; dostrój pod swój plik
+# Wielkość interfejsu (kafelki gestów, panel quizu, przycisk, logo) względem wysokości obrazu.
+# 1.0 = jak w pierwszej wersji; mniejsza wartość = mniejsze ramki (np. na dużym wyświetlaczu).
+UI_SCALE = 0.72
 FACE_DETECT_EVERY_N = 1       # MediaPipe Face Detection jest szybkie – co klatkę (płynne śledzenie)
 FACE_MODEL = 0                # 0 = twarze do ~2 m od kamery, 1 = do ~5 m
 
@@ -195,7 +198,8 @@ class Scene:
 
     def __init__(self, w: int, h: int, assets: dict, text: TextRenderer):
         self.w, self.h = w, h
-        self.hud = fx.Hud(w, h, text)
+        self.ui = h / 540 * UI_SCALE  # skala interfejsu
+        self.hud = fx.Hud(w, h, text, self.ui)
         self.sparkles = fx.Sparkles(h / 540)
         self.snow = fx.SnowEffect(w, h, assets["snowflake"])
         self.santa = fx.SantaEffect(w, h, assets["santa"], SANTA_DURATION, text)
@@ -205,12 +209,13 @@ class Scene:
         # W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
         # (logo aplikacji jest prawie kwadratowe, więc dostaje więcej wysokości niż szerokie logo RSS)
         if assets["app_logo"] is not None:
-            self.logo = fx.Logo(w, h, assets["app_logo"], height_frac=0.2)
+            self.logo = fx.Logo(w, h, assets["app_logo"], 108 * self.ui, self.ui)
         else:
-            self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
+            self.logo = (fx.Logo(w, h, assets["logo"], 70 * self.ui, self.ui)
+                         if assets["logo"] is not None else None)
         garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
-        self.quiz_view = QuizView(w, h, text)
+        self.quiz_view = QuizView(w, h, text, self.ui)
 
 
 def draw_debug(frame, raw_landmarks, hand_infos, faces, text: TextRenderer) -> None:

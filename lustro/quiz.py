@@ -184,14 +184,15 @@ def _blend_rounded(frame, x0, y0, x1, y1, r, color, alpha):
 class QuizView:
     """Panel z pytaniem (u góry, na środku) i przełącznik QUIZ (lewy górny róg)."""
 
-    def __init__(self, w: int, h: int, text):
+    def __init__(self, w: int, h: int, text, ui: float):
         self.w, self.h, self.text = w, h, text
-        s = self.s = h / 540
+        s = self.s = ui  # skala interfejsu (UI_SCALE w swiateczne_lustro.py)
         # Przełącznik – pod girlandą, w lewym górnym rogu
-        self.btn = (int(12 * s), int(58 * s), int(12 * s + 150 * s), int(58 * s + 34 * s))
-        # Panel z pytaniem
+        by = max(58 * s, 0.07 * h + 6 * s)
+        self.btn = (int(12 * s), int(by), int(12 * s + 150 * s), int(by + 34 * s))
+        # Panel z pytaniem – na środku u góry, na wysokości przełącznika
         pw = min(w * 0.56, 520 * s)
-        self.panel = (int((w - pw) / 2), int(0.11 * h), int((w + pw) / 2), int(0.11 * h + 128 * s))
+        self.panel = (int((w - pw) / 2), int(by), int((w + pw) / 2), int(by + 128 * s))
 
     def hit_button(self, x: int, y: int) -> bool:
         x0, y0, x1, y1 = self.btn
