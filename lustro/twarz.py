@@ -59,7 +59,7 @@ class FaceLocator:
     """MediaPipe Face Detection z zapasowym Haar Cascade."""
 
     def __init__(self, mp_face_detection=None, haar_dirs=(), model_selection: int = 0,
-                 min_confidence: float = 0.5):
+                 min_confidence: float = 0.6):
         self.detector = None
         self.cascade = None
         if mp_face_detection is not None:

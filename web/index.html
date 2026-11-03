@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Świąteczne Lustro AR</title>
+  <meta name="description" content="Interaktywne lustro AR reagujące na gesty dłoni – stoisko WRSS WMFiI UG na Mikołajkach naukowych.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Obraz z kamery + nakładki (rysowane w js/main.js) -->
+  <canvas id="scena" aria-label="Obraz z kamery z efektami świątecznymi"></canvas>
+  <video id="kamera" playsinline muted></video>
+
+  <!-- Ekran startowy -->
+  <main id="start" class="start">
+    <div class="karta">
+      <img id="start-logo" class="logo" alt="Logo WRSS WMFiI UG">
+      <h1>Świąteczne Lustro AR</h1>
+      <p class="opis">Stań przed kamerą i pokaż gest dłonią – komputer go rozpozna i wyczaruje świąteczny efekt.</p>
+      <ul class="gesty">
+        <li><span class="ikona">✊</span><span><b>Pięść</b> śnieg</span></li>
+        <li><span class="ikona">🖐️</span><span><b>Otwarta dłoń</b> sanie Mikołaja</span></li>
+        <li><span class="ikona">✌️</span><span><b>Znak V</b> czapka Mikołaja</span></li>
+        <li><span class="ikona">👍</span><span><b>Kciuk w górę</b> choinka</span></li>
+      </ul>
+      <button id="start-przycisk" type="button" disabled>Uruchom kamerę</button>
+      <p id="status" class="status" role="status" aria-live="polite">Ładowanie…</p>
+      <p class="prywatnosc">Obraz z kamery jest analizowany wyłącznie w tej przeglądarce i nigdzie nie jest wysyłany ani zapisywany.</p>
+    </div>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
