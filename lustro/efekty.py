@@ -830,11 +830,21 @@ class Garland:
 # INTERFEJS (logo + pasek gestów)
 # =============================================================================
 
+def is_light_logo(img: np.ndarray) -> bool:
+    """Czy logo jest jasne (średnia jasność nieprzezroczystych pikseli > 160)?"""
+    mask = img[:, :, 3] > 128
+    if not mask.any():
+        return False
+    b, g, r = (img[:, :, c][mask].astype(np.float32).mean() for c in range(3))
+    return 0.114 * b + 0.587 * g + 0.299 * r > 160
+
+
 class Logo:
     """
-    Logo samorządu (logo_rss.png) stale w prawym górnym rogu, z przezroczystością.
-    Pod logo leży jasna, półprzezroczysta "podkładka" – bez niej kolorowe logo
-    może zlewać się z tłem z kamery (np. czerwone logo na czerwonym swetrze).
+    Logo aplikacji (logo_filterss.png, a gdy go brak – logo_rss.png) stale
+    w prawym górnym rogu, z przezroczystością. Pod logo leży półprzezroczysta
+    "podkładka", żeby logo nie zlewało się z tłem z kamery. Jej kolor dobiera się
+    sam: jasna pod ciemne/kolorowe logo, ciemna pod jasne (np. białe) logo.
     """
 
     def __init__(self, w, h, img: np.ndarray, height_frac: float = 0.13,
@@ -853,8 +863,11 @@ class Logo:
         if plate_opacity > 0:
             pw, ph = self.sprite.w + 2 * self.pad, self.sprite.h + 2 * self.pad
             plate = np.zeros((ph, pw, 4), np.uint8)
-            rounded_rect(plate, (0, 0), (pw - 1, ph - 1), int(12 * s), (250, 250, 250, 255))
-            plate[:, :, 3] = (plate[:, :, 3] * plate_opacity).astype(np.uint8)
+            light = is_light_logo(img)
+            color = (30, 24, 20, 255) if light else (250, 250, 250, 255)
+            opacity = 0.65 if light else plate_opacity
+            rounded_rect(plate, (0, 0), (pw - 1, ph - 1), int(12 * s), color)
+            plate[:, :, 3] = (plate[:, :, 3] * opacity).astype(np.uint8)
             self.plate = Sprite.from_bgra(plate)
 
     @property

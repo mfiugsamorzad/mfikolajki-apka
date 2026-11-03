@@ -20,7 +20,8 @@ rozpoznajemy 4 gesty:
                                    lokalizuje MediaPipe Face Detection
     Kciuk w górę      (THUMBS_UP)  choinka z mrugającymi lampkami (tree.png)
 
-Stale widoczne: logo samorządu (logo_rss.png) w prawym górnym rogu.
+Stale widoczne: logo aplikacji (logo_filterss.png; bez niego – logo samorządu
+logo_rss.png) w prawym górnym rogu.
 Wszystkie napisy: czcionka DM Sans (DMSans.ttf) renderowana przez Pillow.
 
 Struktura projektu:
@@ -29,7 +30,7 @@ Struktura projektu:
     lustro/twarz.py      – lokalizacja twarzy i pozycji czapki na głowie
     lustro/efekty.py     – grafika: sprite'y, śnieg, sanie, czapka, choinka, logo, HUD
     lustro/tekst.py      – napisy DM Sans (Pillow -> NumPy/OpenCV)
-    grafiki/             – santa.png, hat.png, tree.png, snowflake.png, logo_rss.png
+    grafiki/             – santa.png, hat.png, tree.png, snowflake.png, logo_filterss.png, logo_rss.png
     czcionki/            – DMSans.ttf (opcjonalnie DMSans-Bold.ttf)
 
 Sterowanie z klawiatury:
@@ -85,6 +86,7 @@ ASSET_FILES = {
     "tree": "tree.png",
     "snowflake": "snowflake.png",
     "logo": "logo_rss.png",
+    "app_logo": "logo_filterss.png",   # logo aplikacji – w prawym górnym rogu obrazu
 }
 # Czcionka DM Sans. Akceptujemy też nazwy plików z paczki pobranej z Google Fonts.
 FONT_FILES = ["DMSans.ttf", "DMSans-Regular.ttf", "DMSans[opsz,wght].ttf",
@@ -177,8 +179,10 @@ def load_assets() -> dict:
     if assets["snowflake"] is None:
         print("[info] Brak snowflake.png – używam rysowanej śnieżynki.")
         assets["snowflake"] = fx.make_fallback_snowflake()
-    if assets["logo"] is None:
-        print("[uwaga] Brak logo_rss.png – logo nie będzie wyświetlane.")
+    if assets["app_logo"] is None:
+        print("[info] Brak logo_filterss.png – w rogu ekranu będzie logo samorządu (logo_rss.png).")
+    if assets["logo"] is None and assets["app_logo"] is None:
+        print("[uwaga] Brak logo_filterss.png i logo_rss.png – logo nie będzie wyświetlane.")
     return assets
 
 
@@ -198,7 +202,9 @@ class Scene:
         self.hat = fx.HatEffect(assets["hat"], HAT_SHOW_TIME, HAT_ANCHOR_UV,
                                 HAT_WIDTH_SCALE, HAT_FOREHEAD_UP)
         self.tree = fx.TreeEffect(w, h, assets["tree"], TREE_SHOW_TIME, self.hud.height + 6)
-        self.logo = fx.Logo(w, h, assets["logo"]) if assets["logo"] is not None else None
+        # W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
+        corner_logo = assets["app_logo"] if assets["app_logo"] is not None else assets["logo"]
+        self.logo = fx.Logo(w, h, corner_logo) if corner_logo is not None else None
         garland_end = self.logo.left - self.logo.margin if self.logo else None
         self.garland = fx.Garland(w, h, garland_end)
         self.quiz_view = QuizView(w, h, text)

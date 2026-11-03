@@ -44,9 +44,9 @@ const ASSETS = {
   tree: "tree.png",
   snowflake: "snowflake.png",
   logo: "logo_rss.png",
+  // Logo aplikacji: w prawym górnym rogu obrazu, na ekranie startowym i jako ikona karty
+  appLogo: "logo_filterss.png",
 };
-// Logo aplikacji – tylko na ekranie startowym i jako ikona karty przeglądarki (opcjonalne)
-const APP_LOGO = "logo_filterss.png";
 
 // =============================================================================
 // ELEMENTY STRONY I STAN
@@ -117,10 +117,9 @@ async function loadImage(name) {
   return null;
 }
 
-async function showAppLogo() {
-  const img = await loadImage(APP_LOGO);
-  if (!img) return; // brak pliku -> zostaje napis "MFIstmas filteRSS"
-  const src = fx.trimTransparent(img).toDataURL();
+function showAppLogo(trimmed) {
+  if (!trimmed) return; // brak pliku -> zostaje napis "MFIstmas filteRSS"
+  const src = trimmed.toDataURL();
   document.getElementById("start-logo-aplikacji").src = src;
   document.querySelector(".karta").classList.add("ma-logo");
   const icon = document.createElement("link"); // ikona karty przeglądarki
@@ -136,13 +135,15 @@ async function loadAssets() {
   const raw = Object.fromEntries(entries);
   // Przycięte przezroczyste marginesy – logo ma właściwą wielkość i jest wyśrodkowane
   if (raw.logo) document.getElementById("start-logo").src = fx.trimTransparent(raw.logo).toDataURL();
-  showAppLogo(); // nie czekamy – logo aplikacji nie jest potrzebne do działania lustra
+  const appLogo = raw.appLogo ? fx.trimTransparent(raw.appLogo) : null;
+  showAppLogo(appLogo);
   return {
     santa: raw.santa ? fx.trimTransparent(raw.santa) : null, // brak -> baner "HO HO HO"
     hat: raw.hat ? fx.trimTransparent(raw.hat) : fx.fallbackHat(),
     tree: raw.tree ? fx.trimTransparent(raw.tree) : fx.fallbackTree(),
     snowflake: raw.snowflake ? fx.trimTransparent(raw.snowflake) : fx.fallbackSnowflake(),
     logo: raw.logo ? fx.trimTransparent(raw.logo) : null,
+    appLogo,
   };
 }
 
@@ -198,7 +199,9 @@ class Scene {
     this.santa = new fx.SantaEffect(w, h, assets.santa, SANTA_DURATION);
     this.hat = new fx.HatEffect(assets.hat, HAT_SHOW_TIME, HAT_ANCHOR, HAT_WIDTH_SCALE, HAT_FOREHEAD_UP);
     this.tree = new fx.TreeEffect(w, h, assets.tree, TREE_SHOW_TIME, this.hud.height + 6 * this.s);
-    this.logo = assets.logo ? new fx.Logo(w, h, assets.logo) : null;
+    // W rogu obrazu: logo aplikacji, a gdy go brak – logo samorządu
+    const cornerLogo = assets.appLogo || assets.logo;
+    this.logo = cornerLogo ? new fx.Logo(w, h, cornerLogo) : null;
     this.garland = new fx.Garland(w, h, this.logo ? this.logo.left - this.logo.margin : null);
     this.quizView = new QuizView(w, h);
   }

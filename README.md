@@ -32,7 +32,7 @@ uczą się w szkole.
 | 👍 **Kciuk w górę** | choinka z mrugającymi lampkami w prawym dolnym rogu (5 s) |
 
 Na dole ekranu stale widać cztery kafelki z gestami, więc nie trzeba ich pamiętać. Kafelek gestu,
-który komputer właśnie rozpoznał, podświetla się na czerwono. W prawym górnym rogu jest logo RSS.
+który komputer właśnie rozpoznał, podświetla się na czerwono. W prawym górnym rogu jest logo aplikacji.
 
 ## 🧮 Tryb QUIZ
 
@@ -126,7 +126,8 @@ Wrzuć pliki do odpowiednich folderów. Nazwy muszą być **dokładnie takie**: 
 ```
 mfikolajki-apka/
 ├── grafiki/
-│   ├── logo_rss.png      logo samorządu (prawy górny róg)
+│   ├── logo_filterss.png logo aplikacji (prawy górny róg)
+│   ├── logo_rss.png      logo samorządu (ekran startowy)
 │   ├── santa.png         sanie Mikołaja
 │   ├── hat.png           czapka Mikołaja
 │   ├── tree.png          choinka
