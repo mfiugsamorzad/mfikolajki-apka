@@ -1,4 +1,4 @@
-// christmas filteRSS – wersja przeglądarkowa.
+// MFIstmas filteRSS – wersja przeglądarkowa.
 //
 // Obraz z kamery (getUserMedia) jest rysowany na <canvas> odbity lustrzanie,
 // a efekty są nakładane bezpośrednio na niego. MediaPipe (Hand Landmarker
@@ -117,7 +117,7 @@ async function loadImage(name) {
 
 async function showAppLogo() {
   const img = await loadImage(APP_LOGO);
-  if (!img) return; // brak pliku -> zostaje napis "christmas filteRSS"
+  if (!img) return; // brak pliku -> zostaje napis "MFIstmas filteRSS"
   const src = fx.trimTransparent(img).toDataURL();
   document.getElementById("start-logo-aplikacji").src = src;
   document.querySelector(".karta").classList.add("ma-logo");

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Grafika i efekty aplikacji christmas filteRSS.
+Grafika i efekty aplikacji MFIstmas filteRSS.
 
 Najważniejsze decyzje wizualne / wydajnościowe:
 

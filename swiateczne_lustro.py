@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-christmas filteRSS
+MFIstmas filteRSS
 ==================
 
 Lustro AR w stylu filtrów z Instagrama: na ekranie widać obraz NA ŻYWO z kamery
@@ -91,7 +91,7 @@ FONT_FILES = ["DMSans.ttf", "DMSans-Regular.ttf", "DMSans[opsz,wght].ttf",
 # Pogrubienie (opcjonalne): pierwszy znaleziony plik; bez niego – oś wagi czcionki zmiennej
 FONT_BOLD_FILES = ["DMSans-Bold.ttf", "DMSans-SemiBold.ttf", "DMSans-ExtraBold.ttf"]
 
-WINDOW_NAME = "christmas filteRSS"
+WINDOW_NAME = "MFIstmas filteRSS"
 
 # Cooldown (s) – minimalny odstęp między kolejnymi WYZWOLENIAMI danego efektu.
 # Dla sań to kluczowe: bez tego przy 30 FPS każdy kadr z otwartą dłonią
@@ -270,7 +270,7 @@ class BlackFrameWatch:
 # =============================================================================
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="christmas filteRSS – świąteczne lustro AR (OpenCV + MediaPipe)")
+    parser = argparse.ArgumentParser(description="MFIstmas filteRSS – świąteczne lustro AR (OpenCV + MediaPipe)")
     parser.add_argument("--camera", type=int, default=0, help="indeks kamery (domyślnie 0)")
     parser.add_argument("--width", type=int, default=960, help="szerokość obrazu kamery")
     parser.add_argument("--height", type=int, default=540, help="wysokość obrazu kamery")
