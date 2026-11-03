@@ -1,2 +1,207 @@
-# mfikolajki-apka
-Interaktywne lustro AR wykorzystujące OpenCV i MediaPipe do rozpoznawania gestów dłoni w czasie rzeczywistym. Projekt przygotowany na stoisko RSS podczas Mikołajek na WMFiI UG.
+# 🎄 Świąteczne Lustro AR
+
+Interaktywne „magiczne lustro”, które reaguje na gesty dłoni. Stajesz przed kamerą, widzisz się na ekranie
+jak w lustrze i wystarczy jeden gest: zaczyna padać śnieg, nad głową przelatują sanie Mikołaja, na głowie
+pojawia się czapka Mikołaja, a w rogu ekranu rozbłyska choinka. Działa to podobnie do filtrów
+na Instagramie, z tą różnicą, że efekty uruchamia ruch ręki, a nie przycisk.
+
+## Po co powstała ta aplikacja?
+
+Aplikacja powstała na **stoisko Wydziałowej Rady Samorządu Studenckiego (RSS) Wydziału Matematyki,
+Fizyki i Informatyki Uniwersytetu Gdańskiego** podczas **wydziałowych Mikołajek naukowych** dla uczniów szkół podstawowych
+i ponadpodstawowych.
+
+Chcemy pokazać uczniom, że informatyka i matematyka to nie tylko wzory w zeszycie. Każdy może podejść,
+pomachać do kamery i od razu zobaczyć, co potrafi komputer, który „widzi”. Przy okazji łatwo
+opowiedzieć, jak to działa: komputer znajduje na obrazie dłoń, zamienia ją na 21 punktów i na podstawie
+**odległości między tymi punktami** rozpoznaje gest. To zwykła geometria, ta sama, której uczniowie
+uczą się w szkole.
+
+## Gesty i efekty
+
+| Gest | Efekt |
+|---|---|
+| ✊ **Zaciśnięta pięść** | pada śnieg, a u dołu ekranu rośnie zaspa |
+| 🖐️ **Otwarta dłoń** (przytrzymana ~0,6 s) lub **machanie** | przez ekran przelatują sanie Mikołaja (kolejne najwcześniej po 3 s) |
+| ✌️ **Znak V** | czapka Mikołaja na głowie przez 8 s (można opuścić rękę i pozować) |
+| 👍 **Kciuk w górę** | choinka z mrugającymi lampkami w prawym dolnym rogu (5 s) |
+
+Na dole ekranu stale widać cztery kafelki z gestami, więc nie trzeba ich pamiętać. Kafelek gestu,
+który komputer właśnie rozpoznał, podświetla się na czerwono. W prawym górnym rogu jest logo RSS.
+
+## Jak to działa? (w skrócie, do opowiedzenia przy stoisku)
+
+1. **Kamera** wysyła ok. 30 obrazów na sekundę. Każdy obraz jest odbijany poziomo, żeby ekran
+   zachowywał się jak lustro.
+2. **Sztuczna inteligencja (MediaPipe Hands)** znajduje na obrazie dłonie i zaznacza na każdej
+   **21 punktów**: nadgarstek, stawy i czubki palców.
+3. **Geometria rozpoznaje gest.** Program mierzy odległości między punktami, na przykład:
+   - palec jest **wyprostowany**, gdy jego czubek leży dalej od nadgarstka niż jego środkowy staw;
+   - **pięść** to wszystkie palce zgięte i czubki blisko środka dłoni;
+   - **znak V** to wyprostowany palec wskazujący i środkowy, rozchylone w literę V.
+
+   Odległości są dzielone przez wielkość dłoni, więc działa to tak samo z bliska i z daleka.
+4. **Druga sieć (MediaPipe Face Detection)** znajduje twarz i oczy. Z położenia oczu wynika, gdzie
+   jest czoło, jak duża jest głowa i jak bardzo jest przechylona. Dzięki temu czapka siedzi na głowie
+   i przechyla się razem z nią.
+5. **Efekty** są nakładane na obraz z kamery z uwzględnieniem przezroczystości, tak jak warstwy
+   w programie graficznym.
+
+Klawisz `d` włącza **tryb podglądu**: na ekranie widać szkielet dłoni, nazwę rozpoznanego gestu
+i prostokąt wokół twarzy. Najlepiej pokazuje on uczniom, co komputer „widzi”.
+
+Cała analiza obrazu odbywa się **na miejscu, na laptopie**. Obraz nie jest nigdzie wysyłany ani
+zapisywany. Jedyny wyjątek to zrzut ekranu wykonany ręcznie klawiszem `s`.
+
+---
+
+## Uruchomienie krok po kroku
+
+### 1. Wymagania
+
+- laptop z kamerą internetową (wbudowaną lub na USB),
+- **Python 3.12** (działa też 3.9–3.11; **nie działa na 3.13 i nowszych**, bo potrzebna wersja
+  MediaPipe nie jest dla nich wydana): https://www.python.org/downloads/.
+  Na Windows zaznacz przy instalacji **„Add Python to PATH”**.
+
+### 2. Pobranie kodu
+
+```bash
+git clone https://github.com/mfiugsamorzad/mfikolajki-apka.git
+cd mfikolajki-apka
+```
+
+Bez gita: na stronie repozytorium kliknij **Code → Download ZIP** i rozpakuj archiwum.
+
+Aktualizacja do najnowszej wersji (gdy kod był już wcześniej pobrany przez git):
+
+```bash
+git pull
+```
+
+### 3. Grafiki i czcionka
+
+Wrzuć pliki do odpowiednich folderów. Nazwy muszą być **dokładnie takie**: małe litery, bez spacji.
+
+```
+mfikolajki-apka/
+├── grafiki/
+│   ├── logo_rss.png      logo samorządu (prawy górny róg)
+│   ├── santa.png         sanie Mikołaja
+│   ├── hat.png           czapka Mikołaja
+│   ├── tree.png          choinka
+│   └── snowflake.png     śnieżynka
+└── czcionki/
+    ├── DMSans-Regular.ttf
+    └── DMSans-SemiBold.ttf   (lub DMSans-Bold.ttf)
+```
+
+| Plik | Na co uważać |
+|---|---|
+| wszystkie `.png` | **przezroczyste tło**, inaczej grafika będzie miała wokół siebie prostokąt (puste marginesy program przytnie sam) |
+| `santa.png` | sanie zwrócone **w prawo** (lecą od lewej do prawej), kadr podłużny ~3:1 |
+| `hat.png` | biały otok przy **dolnej krawędzi** obrazka, bez pustych marginesów |
+| `tree.png` | choinka ustawiona pionowo; lampki program dorysuje sam |
+| `snowflake.png` | biała śnieżynka w kwadratowym kadrze |
+| czcionka | z https://fonts.google.com/specimen/DM+Sans (**Get font → Download all**) weź z folderu `static/` plik `DMSans-Regular.ttf` oraz `DMSans-SemiBold.ttf` lub `DMSans-Bold.ttf` |
+
+Jeśli którejś grafiki brakuje, aplikacja i tak się uruchomi i narysuje własną wersję zastępczą.
+
+### 4. Instalacja bibliotek (jednorazowo)
+
+W terminalu, w folderze projektu:
+
+**Windows**
+```bash
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**macOS / Linux**
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 5. Start
+
+Przy każdym kolejnym uruchomieniu najpierw aktywuj środowisko (`.venv\Scripts\activate` na Windows,
+`source .venv/bin/activate` na macOS i Linuksie), a potem:
+
+```bash
+python swiateczne_lustro.py --fullscreen
+```
+
+Bez `--fullscreen` aplikacja otworzy się w zwykłym oknie.
+
+| Opcja | Działanie |
+|---|---|
+| `--fullscreen` | pełny ekran (polecane na stoisko) |
+| `--camera 1` | inna kamera, np. zewnętrzna na USB (domyślnie `0`) |
+| `--width 1280 --height 720` | rozdzielczość obrazu z kamery (domyślnie 960×540) |
+| `--no-face` | bez wykrywania twarzy (czapka pojawi się wtedy nad palcami) |
+
+### Klawisze w trakcie działania
+
+| Klawisz | Działanie |
+|---|---|
+| `q` lub `Esc` | wyjście |
+| `d` | tryb podglądu: szkielet dłoni, rozpoznany gest, wykryte twarze |
+| `s` | zrzut ekranu (plik `lustro_…png` w folderze, z którego uruchomiono aplikację) |
+| `g` | włącz lub wyłącz girlandę lampek u góry ekranu |
+| `f` | włącz lub wyłącz wykrywanie twarzy |
+
+---
+
+## Wskazówki na stoisko
+
+- **Światło:** twarz i dłonie powinny być dobrze oświetlone. Unikaj okna albo lampy za plecami
+  osoby stojącej przed kamerą.
+- **Odległość:** najlepiej 0,5–2 m od kamery. Dłoń powinna być cała w kadrze i skierowana
+  wnętrzem do kamery.
+- **Kamera:** na wysokości twarzy, najlepiej nad dużym monitorem lub telewizorem, który pokazuje obraz.
+- **Kilka osób naraz:** czapkę dostaje każda wykryta twarz, a gesty rozpoznawane są z maksymalnie
+  dwóch dłoni.
+- **Przed otwarciem stoiska:** uruchom aplikację, sprawdź wszystkie 4 gesty i zrób zrzut klawiszem `s`.
+
+## Rozwiązywanie problemów
+
+| Problem | Rozwiązanie |
+|---|---|
+| Czarny obraz | Daj programowi dostęp do kamery: **Windows:** Ustawienia → Prywatność → Kamera, **macOS:** Ustawienia systemowe → Prywatność i ochrona → Kamera (dla Terminala). Zamknij Teams, Zoom itp. Sprawdź zasłonkę kamery. |
+| „nie można otworzyć kamery” | Spróbuj `--camera 1`. |
+| „nie znaleziono mediapipe.solutions” | Zła wersja Pythona: potrzebny jest 3.12 (krok 1), a środowisko trzeba utworzyć od nowa. |
+| Prostokąt wokół grafiki | PNG nie ma przezroczystego tła (w konsoli pojawi się `[uwaga]`). |
+| `Brak pliku DMSans.ttf` | Czcionka nie leży w `czcionki/` albo ma podwójne rozszerzenie (np. `DMSans-Regular.ttf.ttf`). |
+| Gest nie jest rozpoznawany | Włącz `d` i zobacz, czy dłoń ma narysowany szkielet. Popraw oświetlenie i pokaż całą dłoń wnętrzem do kamery. |
+| Czapka źle dopasowana | Zmień stałe `HAT_WIDTH_SCALE` (rozmiar), `HAT_FOREHEAD_UP` (wysokość) i `HAT_ANCHOR_UV` (punkt obrazka, który trafia w czoło) na początku `swiateczne_lustro.py`. |
+| Twarze daleko od kamery nie są wykrywane | Ustaw `FACE_MODEL = 1` w `swiateczne_lustro.py` (model dalekiego zasięgu, do ~5 m). |
+| Aplikacja się zacina | Uruchom z mniejszą rozdzielczością: `--width 640 --height 360`. |
+
+---
+
+## Dla programistów
+
+**Technologie:** Python, OpenCV, MediaPipe (Hands, Face Detection), NumPy, Pillow.
+
+```
+swiateczne_lustro.py   pętla główna: kamera, MediaPipe, logika wyzwalania efektów, konfiguracja
+lustro/
+├── gesty.py           rozpoznawanie gestów z 21 punktów dłoni, wygładzanie, cooldown
+├── twarz.py           wykrywanie twarzy, pozycja i przechylenie czapki
+├── efekty.py          grafika: śnieg, sanie, czapka, choinka, iskry, girlanda, logo, pasek gestów
+└── tekst.py           napisy czcionką DM Sans (Pillow → NumPy/OpenCV)
+grafiki/               pliki PNG
+czcionki/              DM Sans
+```
+
+- **Stabilność gestów:** gest liczy się dopiero, gdy pojawi się w co najmniej 60% z ostatnich 6 klatek.
+  Sanie mają 3 s przerwy między wywołaniami, choinka 2 s.
+- **Wydajność:** lżejszy model dłoni (`model_complexity=0`), mieszanie przezroczystości tylko w obszarze
+  grafiki, pamięć podręczna przeskalowanych grafik i gotowych napisów. Efekty zajmują ok. 10 ms na
+  klatkę, a całość działa płynnie na typowym laptopie.
+- **Konfiguracja** (czasy efektów, cooldowny, dopasowanie czapki) jest w stałych na początku
+  `swiateczne_lustro.py`. Każda ma komentarz.
+- Szczegółowe komentarze o rozpoznawaniu gestów z punktów dłoni są w `lustro/gesty.py`.
