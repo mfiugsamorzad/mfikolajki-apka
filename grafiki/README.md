@@ -1,13 +1,11 @@
-# Grafiki
+# grafiki/
 
-Wrzuć tutaj pliki PNG **z przezroczystym tłem** (dokładnie te nazwy):
+Grafiki nakładane przez aplikację na obraz z kamery. Wszystkie to pliki PNG z przezroczystym tłem.
 
-| Plik | Wskazówki |
-|---|---|
-| `logo_rss.png` | logo samorządu – stale w prawym górnym rogu |
-| `santa.png` | sanie zwrócone **w prawo**, kadr podłużny ~3:1 |
-| `hat.png` | biały otok przy **dolnej krawędzi** obrazka, bez pustych marginesów |
-| `tree.png` | choinka pionowo |
-| `snowflake.png` | biała śnieżynka, kwadratowy kadr |
-
-Brakujące grafiki aplikacja zastąpi rysowanymi wersjami zastępczymi.
+| Plik | Zawartość | Gdzie pojawia się w aplikacji |
+|---|---|---|
+| `logo_rss.png` | logo Wydziałowej Rady Samorządu Studenckiego WMFiI UG | stale w prawym górnym rogu ekranu, na jasnej podkładce |
+| `santa.png` | Mikołaj w saniach zaprzęgniętych w renifera | przelatuje przez ekran po geście otwartej dłoni lub machaniu |
+| `hat.png` | czerwona czapka Mikołaja z białym otokiem i pomponem | na głowie osoby w kadrze po geście „V” |
+| `tree.png` | ubrana choinka z gwiazdą | w prawym dolnym rogu po geście „kciuk w górę”, z dorysowanymi migającymi lampkami |
+| `snowflake.png` | lodowo-niebieska śnieżynka | padający śnieg po zaciśnięciu pięści (płatki są obracane i skalowane) |
