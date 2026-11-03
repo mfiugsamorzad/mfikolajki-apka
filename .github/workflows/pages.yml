@@ -1,0 +1,48 @@
+# Publikuje wersję przeglądarkową (folder web/ + grafiki/ + czcionki/) na GitHub Pages.
+# Uruchamia się po każdej zmianie tych folderów na gałęzi main (oraz ręcznie: Actions → Run workflow).
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "grafiki/**"
+      - "czcionki/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Złóż stronę
+        run: |
+          mkdir _site
+          cp -r web/. _site/
+          cp -r grafiki czcionki _site/
+          find _site -name README.md -delete
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

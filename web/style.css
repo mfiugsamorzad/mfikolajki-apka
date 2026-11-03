@@ -1,0 +1,162 @@
+/* Czcionka DM Sans – pliki z folderu czcionki/ (na GitHub Pages obok strony,
+   przy uruchomieniu lokalnym z web/ – piętro wyżej; przeglądarka próbuje po kolei). */
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 400;
+  font-display: swap;
+  src: url("czcionki/DMSans-Regular.ttf") format("truetype"),
+       url("../czcionki/DMSans-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 600 700;
+  font-display: swap;
+  src: url("czcionki/DMSans-SemiBold.ttf") format("truetype"),
+       url("../czcionki/DMSans-SemiBold.ttf") format("truetype");
+}
+
+:root {
+  --tlo: #0d1b2a;
+  --tlo-2: #1b263b;
+  --czerwony: #c62828;
+  --czerwony-ciemny: #a31f1f;
+  --zloty: #ffc828;
+  --tekst: #f5f7fa;
+  --tekst-2: #b8c2cc;
+  --karta: rgba(255, 255, 255, 0.07);
+  --ramka: rgba(255, 255, 255, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+/* Płótno z obrazem z kamery wypełnia cały ekran */
+#scena {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* Element <video> jest tylko źródłem klatek – widoczny jest obraz na płótnie */
+#kamera {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- start --- */
+.start {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse at top, rgba(198, 40, 40, 0.35), transparent 60%),
+    linear-gradient(160deg, var(--tlo-2), var(--tlo));
+}
+.start[hidden] { display: none; }
+
+.karta {
+  width: min(520px, 100%);
+  padding: 32px 28px;
+  border-radius: 20px;
+  background: var(--karta);
+  border: 1px solid var(--ramka);
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.logo {
+  height: 72px;
+  max-width: 70%;
+  object-fit: contain;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(250, 250, 250, 0.9);
+}
+.logo:not([src]) { display: none; }
+
+h1 {
+  margin: 20px 0 8px;
+  font-size: clamp(26px, 6vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.opis {
+  margin: 0 0 20px;
+  color: var(--tekst-2);
+  line-height: 1.5;
+}
+
+.gesty {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  text-align: left;
+}
+.gesty li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  line-height: 1.3;
+}
+.gesty b { display: block; font-weight: 600; }
+.gesty .ikona { font-size: 24px; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 14px 32px;
+  border: 2px solid var(--zloty);
+  border-radius: 999px;
+  background: var(--czerwony);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+button:hover:not(:disabled) { background: var(--czerwony-ciemny); transform: translateY(-1px); }
+button:focus-visible { outline: 3px solid var(--zloty); outline-offset: 3px; }
+button:disabled { opacity: 0.5; cursor: wait; }
+
+.status {
+  min-height: 1.4em;
+  margin: 16px 0 0;
+  color: var(--tekst-2);
+  font-size: 14px;
+}
+.status.blad { color: #ff8a80; }
+
+.prywatnosc {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--tekst-2);
+  opacity: 0.8;
+}
+
+@media (max-width: 420px) {
+  .karta { padding: 24px 16px; }
+  .gesty { grid-template-columns: 1fr; }
+}

@@ -5,6 +5,11 @@ jak w lustrze i wystarczy jeden gest: zaczyna padać śnieg, nad głową przelat
 pojawia się czapka Mikołaja, a w rogu ekranu rozbłyska choinka. Działa to podobnie do filtrów
 na Instagramie, z tą różnicą, że efekty uruchamia ruch ręki, a nie przycisk.
 
+Aplikacja ma dwie wersje z tymi samymi gestami i efektami:
+
+- **🌐 w przeglądarce:** **https://mfiugsamorzad.github.io/mfikolajki-apka/**. Nic nie trzeba instalować: otwierasz link, klikasz „Uruchom kamerę” i gotowe.
+- **🐍 w Pythonie:** program uruchamiany na laptopie, opisany niżej w „Uruchomienie krok po kroku”.
+
 ## Po co powstała ta aplikacja?
 
 Aplikacja powstała na **stoisko Wydziałowej Rady Samorządu Studenckiego (RSS) Wydziału Matematyki,
@@ -55,7 +60,26 @@ zapisywany. Jedyny wyjątek to zrzut ekranu wykonany ręcznie klawiszem `s`.
 
 ---
 
-## Uruchomienie krok po kroku
+## Wersja w przeglądarce
+
+Otwórz **https://mfiugsamorzad.github.io/mfikolajki-apka/** w Chrome, Edge lub Firefoksie. Kliknij **Uruchom kamerę** i zezwól na dostęp do kamery.
+
+- Przy pierwszym otwarciu strona pobiera modele MediaPipe (ok. 20 MB), więc warto otworzyć ją przed
+  stoiskiem, przy dobrym internecie. Potem przeglądarka trzyma je w pamięci podręcznej.
+- Obraz z kamery jest analizowany wyłącznie w przeglądarce i nigdzie nie jest wysyłany.
+- Klawisze: `d` tryb podglądu, `f` wykrywanie twarzy, `g` girlanda, `s` zapis zdjęcia (pobiera plik PNG),
+  `Enter` lub podwójne kliknięcie to pełny ekran.
+
+**Uruchomienie lokalne** (np. do zmian w kodzie): w głównym folderze projektu uruchom
+`python -m http.server 8000` i otwórz http://localhost:8000/web/. Kamera działa tylko przez `https://`
+albo `localhost`, dlatego samo otwarcie pliku `index.html` nie wystarczy.
+
+**Publikacja:** po każdej zmianie w `web/`, `grafiki/` lub `czcionki/` na gałęzi `main` workflow
+`.github/workflows/pages.yml` sam publikuje nową wersję strony (zakładka **Actions** na GitHubie).
+
+---
+
+## Uruchomienie krok po kroku (wersja w Pythonie)
 
 ### 1. Wymagania
 
@@ -205,3 +229,8 @@ czcionki/              DM Sans
 - **Konfiguracja** (czasy efektów, cooldowny, dopasowanie czapki) jest w stałych na początku
   `swiateczne_lustro.py`. Każda ma komentarz.
 - Szczegółowe komentarze o rozpoznawaniu gestów z punktów dłoni są w `lustro/gesty.py`.
+
+**Wersja przeglądarkowa** (`web/`): czysty JavaScript bez budowania, MediaPipe Tasks Vision 0.10.21
+(Hand Landmarker, Face Detector) ładowany z CDN jsDelivr, modele w `web/models/`, rysowanie na `<canvas>`.
+Logika gestów w `web/js/gesty.js` to przeniesiony 1:1 kod `lustro/gesty.py`, z tymi samymi progami.
+Zawartość folderu opisuje `web/README.md`.
