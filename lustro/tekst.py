@@ -22,7 +22,7 @@ from collections import OrderedDict
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from efekty import Sprite
+from .efekty import Sprite
 
 
 class TextRenderer:

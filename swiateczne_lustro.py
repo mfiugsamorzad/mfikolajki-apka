@@ -25,10 +25,12 @@ Wszystkie napisy: czcionka DM Sans (DMSans.ttf) renderowana przez Pillow.
 
 Struktura projektu:
     swiateczne_lustro.py – pętla główna: kamera, MediaPipe, logika wyzwalania
-    gesty.py             – rozpoznawanie gestów z landmarków (+ stabilizacja, cooldown)
-    twarz.py             – lokalizacja twarzy i pozycji czapki na głowie
-    efekty.py            – grafika: sprite'y, śnieg, sanie, czapka, choinka, logo, HUD
-    tekst.py             – napisy DM Sans (Pillow -> NumPy/OpenCV)
+    lustro/gesty.py      – rozpoznawanie gestów z landmarków (+ stabilizacja, cooldown)
+    lustro/twarz.py      – lokalizacja twarzy i pozycji czapki na głowie
+    lustro/efekty.py     – grafika: sprite'y, śnieg, sanie, czapka, choinka, logo, HUD
+    lustro/tekst.py      – napisy DM Sans (Pillow -> NumPy/OpenCV)
+    grafiki/             – santa.png, hat.png, tree.png, snowflake.png, logo_rss.png
+    czcionki/            – DMSans.ttf (opcjonalnie DMSans-Bold.ttf)
 
 Sterowanie z klawiatury:
     q / ESC – wyjście            d – szkielet dłoni i rozpoznany gest (debug)
@@ -63,17 +65,19 @@ except (ImportError, AttributeError):  # pragma: no cover - zależy od instalacj
         "(wymaga Pythona 3.9–3.12)."
     )
 
-import efekty as fx
-from gesty import (FIST, PEACE, THUMBS_UP, WAVE, Cooldown, GestureStabilizer, HandInfo,
-                   WaveTracker, classify_gesture, landmarks_to_array)
-from tekst import TextRenderer
-from twarz import FaceLocator, head_pose
+from lustro import efekty as fx
+from lustro.gesty import (FIST, PEACE, THUMBS_UP, WAVE, Cooldown, GestureStabilizer, HandInfo,
+                          WaveTracker, classify_gesture, landmarks_to_array)
+from lustro.tekst import TextRenderer
+from lustro.twarz import FaceLocator, head_pose
 
 # =============================================================================
 # KONFIGURACJA
 # =============================================================================
 
-ASSETS_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GRAPHICS_DIR = os.path.join(BASE_DIR, "grafiki")   # pliki PNG
+FONTS_DIR = os.path.join(BASE_DIR, "czcionki")     # DM Sans (.ttf)
 ASSET_FILES = {
     "santa": "santa.png",
     "hat": "hat.png",
@@ -113,6 +117,18 @@ FACE_MODEL = 0                # 0 = twarze do ~2 m od kamery, 1 = do ~5 m
 # ZASOBY
 # =============================================================================
 
+def find_file(folder: str, name: str) -> str:
+    """
+    Ścieżka do pliku zasobu: najpierw właściwy podfolder (grafiki/ lub czcionki/),
+    a gdy go tam nie ma – główny folder projektu (plik wrzucony "nie tam" też zadziała).
+    """
+    path = os.path.join(folder, name)
+    if os.path.isfile(path):
+        return path
+    fallback = os.path.join(BASE_DIR, name)
+    return fallback if os.path.isfile(fallback) else path
+
+
 def load_rgba(path: str) -> np.ndarray | None:
     """Wczytuje PNG razem z kanałem alfa (BGRA). Zwraca None, jeśli pliku brak."""
     if not os.path.isfile(path):
@@ -132,7 +148,7 @@ def load_rgba(path: str) -> np.ndarray | None:
 
 
 def load_assets() -> dict:
-    assets = {k: load_rgba(os.path.join(ASSETS_DIR, f)) for k, f in ASSET_FILES.items()}
+    assets = {k: load_rgba(find_file(GRAPHICS_DIR, f)) for k, f in ASSET_FILES.items()}
     if assets["santa"] is None:
         print("[info] Brak santa.png – sanie zastąpi czerwony baner 'HO HO HO'.")
     if assets["hat"] is None:
@@ -247,10 +263,10 @@ def main() -> None:
     args = parser.parse_args()
 
     assets = load_assets()
-    font = next((os.path.join(ASSETS_DIR, f) for f in FONT_FILES
-                 if os.path.isfile(os.path.join(ASSETS_DIR, f))), os.path.join(ASSETS_DIR, FONT_FILES[0]))
-    text = TextRenderer(font, os.path.join(ASSETS_DIR, FONT_BOLD_FILE))
-    haar_dirs = [ASSETS_DIR] + ([cv2.data.haarcascades] if hasattr(cv2, "data") else [])
+    font = next((find_file(FONTS_DIR, f) for f in FONT_FILES
+                 if os.path.isfile(find_file(FONTS_DIR, f))), os.path.join(FONTS_DIR, FONT_FILES[0]))
+    text = TextRenderer(font, find_file(FONTS_DIR, FONT_BOLD_FILE))
+    haar_dirs = [GRAPHICS_DIR, BASE_DIR] + ([cv2.data.haarcascades] if hasattr(cv2, "data") else [])
     faces_locator = FaceLocator(mp_face_detection, haar_dirs, FACE_MODEL)
     use_face = not args.no_face and faces_locator.available
 

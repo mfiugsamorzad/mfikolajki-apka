@@ -9,18 +9,18 @@ pip install -r requirements.txt
 python swiateczne_lustro.py            # opcje: --camera 1 --width 1280 --height 720 --fullscreen --no-face
 ```
 
-### Pliki obok skryptu
+### Twoje pliki
 
 | Plik | Wskazówki |
 |---|---|
-| `logo_rss.png` | logo samorządu, stale w prawym górnym rogu (PNG z przezroczystością) |
-| `DMSans.ttf` | czcionka wszystkich napisów ([Google Fonts](https://fonts.google.com/specimen/DM+Sans)); działa też `DMSans-Regular.ttf` lub plik zmienny `DMSans[opsz,wght].ttf`, opcjonalnie `DMSans-Bold.ttf` |
-| `santa.png` | sanie zwrócone **w prawo** (lecą od lewej do prawej), kadr podłużny ~3:1 |
-| `hat.png` | biały otok przy **dolnej krawędzi** obrazka, przycięte puste marginesy |
-| `tree.png` | choinka pionowo; lampki są rozmieszczane automatycznie na gałęziach |
-| `snowflake.png` | biała śnieżynka, kwadratowy kadr (płatki są obracane i skalowane) |
+| `grafiki/logo_rss.png` | logo samorządu, stale w prawym górnym rogu (PNG z przezroczystością) |
+| `czcionki/DMSans.ttf` | czcionka wszystkich napisów ([Google Fonts](https://fonts.google.com/specimen/DM+Sans)); działa też `DMSans-Regular.ttf` lub plik zmienny `DMSans[opsz,wght].ttf`, opcjonalnie `DMSans-Bold.ttf` |
+| `grafiki/santa.png` | sanie zwrócone **w prawo** (lecą od lewej do prawej), kadr podłużny ~3:1 |
+| `grafiki/hat.png` | biały otok przy **dolnej krawędzi** obrazka, przycięte puste marginesy |
+| `grafiki/tree.png` | choinka pionowo; lampki są rozmieszczane automatycznie na gałęziach |
+| `grafiki/snowflake.png` | biała śnieżynka, kwadratowy kadr (płatki są obracane i skalowane) |
 
-Brakujące grafiki zastąpi rysowana wersja zastępcza. Wszystkie PNG muszą mieć przezroczyste tło.
+Grafiki trafiają do folderu `grafiki/`, czcionka do `czcionki/`. Brakujące grafiki zastąpi rysowana wersja zastępcza. Wszystkie PNG muszą mieć przezroczyste tło.
 
 ### Czapka na głowie
 
@@ -39,4 +39,11 @@ ustawisz stałymi `HAT_WIDTH_SCALE`, `HAT_FOREHEAD_UP`, `HAT_ANCHOR_UV` w `swiat
 
 Klawisze: `q`/`Esc` – wyjście, `d` – podgląd szkieletu dłoni i rozpoznanego gestu, `f` – detekcja twarzy on/off, `g` – girlanda lampek, `s` – zrzut ekranu.
 
-Struktura: `swiateczne_lustro.py` (pętla główna), `gesty.py` (rozpoznawanie gestów), `twarz.py` (twarz i pozycja czapki), `efekty.py` (grafika i efekty), `tekst.py` (napisy DM Sans przez Pillow).
+Struktura:
+
+```
+swiateczne_lustro.py   pętla główna (to uruchamiasz)
+lustro/                kod: gesty.py, twarz.py, efekty.py, tekst.py
+grafiki/               PNG: logo_rss, santa, hat, tree, snowflake
+czcionki/              DMSans.ttf
+```
