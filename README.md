@@ -69,11 +69,15 @@ zapisywany. Jedyny wyjątek to zrzut ekranu wykonany ręcznie klawiszem `s`.
 ```bash
 git clone https://github.com/mfiugsamorzad/mfikolajki-apka.git
 cd mfikolajki-apka
-git checkout feature/swiateczne-lustro   # do czasu scalenia zmian z gałęzią main
 ```
 
-Bez gita: na GitHubie wybierz gałąź `feature/swiateczne-lustro`, kliknij **Code → Download ZIP**
-i rozpakuj archiwum.
+Bez gita: na stronie repozytorium kliknij **Code → Download ZIP** i rozpakuj archiwum.
+
+Aktualizacja do najnowszej wersji (gdy kod był już wcześniej pobrany przez git):
+
+```bash
+git pull
+```
 
 ### 3. Grafiki i czcionka
 
